@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ForgeQA.Api/ForgeQA.Api.csproj" />
+    <Project Path="src/ForgeQA.Application/ForgeQA.Application.csproj" />
+    <Project Path="src/ForgeQA.Domain/ForgeQA.Domain.csproj" />
+    <Project Path="src/ForgeQA.Infrastructure/ForgeQA.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ForgeQA.IntegrationTests/ForgeQA.IntegrationTests.csproj" />
+    <Project Path="tests/ForgeQA.UnitTests/ForgeQA.UnitTests.csproj" />
+  </Folder>
+</Solution>

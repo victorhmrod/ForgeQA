@@ -1,0 +1,15 @@
+F:\ForgeQA\backend\src\ForgeQA.Application\obj\Debug\net10.0\ForgeQA.Application.csproj.AssemblyReference.cache
+F:\ForgeQA\backend\src\ForgeQA.Application\obj\Debug\net10.0\ForgeQA.Application.GeneratedMSBuildEditorConfig.editorconfig
+F:\ForgeQA\backend\src\ForgeQA.Application\obj\Debug\net10.0\ForgeQA.Application.AssemblyInfoInputs.cache
+F:\ForgeQA\backend\src\ForgeQA.Application\obj\Debug\net10.0\ForgeQA.Application.AssemblyInfo.cs
+F:\ForgeQA\backend\src\ForgeQA.Application\obj\Debug\net10.0\ForgeQA.Application.csproj.CoreCompileInputs.cache
+F:\ForgeQA\backend\src\ForgeQA.Application\bin\Debug\net10.0\ForgeQA.Application.deps.json
+F:\ForgeQA\backend\src\ForgeQA.Application\bin\Debug\net10.0\ForgeQA.Application.dll
+F:\ForgeQA\backend\src\ForgeQA.Application\bin\Debug\net10.0\ForgeQA.Application.pdb
+F:\ForgeQA\backend\src\ForgeQA.Application\bin\Debug\net10.0\ForgeQA.Domain.dll
+F:\ForgeQA\backend\src\ForgeQA.Application\bin\Debug\net10.0\ForgeQA.Domain.pdb
+F:\ForgeQA\backend\src\ForgeQA.Application\obj\Debug\net10.0\ForgeQA..36839BF7.Up2Date
+F:\ForgeQA\backend\src\ForgeQA.Application\obj\Debug\net10.0\ForgeQA.Application.dll
+F:\ForgeQA\backend\src\ForgeQA.Application\obj\Debug\net10.0\refint\ForgeQA.Application.dll
+F:\ForgeQA\backend\src\ForgeQA.Application\obj\Debug\net10.0\ForgeQA.Application.pdb
+F:\ForgeQA\backend\src\ForgeQA.Application\obj\Debug\net10.0\ref\ForgeQA.Application.dll

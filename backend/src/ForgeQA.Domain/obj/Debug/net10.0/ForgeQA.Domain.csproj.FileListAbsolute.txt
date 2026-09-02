@@ -1,0 +1,11 @@
+F:\ForgeQA\backend\src\ForgeQA.Domain\bin\Debug\net10.0\ForgeQA.Domain.deps.json
+F:\ForgeQA\backend\src\ForgeQA.Domain\bin\Debug\net10.0\ForgeQA.Domain.dll
+F:\ForgeQA\backend\src\ForgeQA.Domain\bin\Debug\net10.0\ForgeQA.Domain.pdb
+F:\ForgeQA\backend\src\ForgeQA.Domain\obj\Debug\net10.0\ForgeQA.Domain.GeneratedMSBuildEditorConfig.editorconfig
+F:\ForgeQA\backend\src\ForgeQA.Domain\obj\Debug\net10.0\ForgeQA.Domain.AssemblyInfoInputs.cache
+F:\ForgeQA\backend\src\ForgeQA.Domain\obj\Debug\net10.0\ForgeQA.Domain.AssemblyInfo.cs
+F:\ForgeQA\backend\src\ForgeQA.Domain\obj\Debug\net10.0\ForgeQA.Domain.csproj.CoreCompileInputs.cache
+F:\ForgeQA\backend\src\ForgeQA.Domain\obj\Debug\net10.0\ForgeQA.Domain.dll
+F:\ForgeQA\backend\src\ForgeQA.Domain\obj\Debug\net10.0\refint\ForgeQA.Domain.dll
+F:\ForgeQA\backend\src\ForgeQA.Domain\obj\Debug\net10.0\ForgeQA.Domain.pdb
+F:\ForgeQA\backend\src\ForgeQA.Domain\obj\Debug\net10.0\ref\ForgeQA.Domain.dll
