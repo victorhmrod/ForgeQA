@@ -22,6 +22,47 @@ namespace ForgeQA.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("ForgeQA.Domain.Entities.ArtifactUploadSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("AbortedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ArtifactId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ExpectedParts")
+                        .HasColumnType("integer");
+
+                    b.Property<long>("PartSizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ProviderUploadId")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ArtifactId");
+
+                    b.HasIndex("ExpiresAt");
+
+                    b.ToTable("ArtifactUploadSessions", (string)null);
+                });
+
             modelBuilder.Entity("ForgeQA.Domain.Entities.Build", b =>
                 {
                     b.Property<Guid>("Id")
@@ -104,6 +145,86 @@ namespace ForgeQA.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("Builds", (string)null);
+                });
+
+            modelBuilder.Entity("ForgeQA.Domain.Entities.BuildArtifact", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ArtifactType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<Guid>("BuildId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedByDisplayName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("Sha256")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("StorageObjectKey")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BuildId");
+
+                    b.HasIndex("StorageObjectKey")
+                        .IsUnique();
+
+                    b.HasIndex("BuildId", "CreatedAt");
+
+                    b.HasIndex("BuildId", "Status");
+
+                    b.ToTable("BuildArtifacts", (string)null);
                 });
 
             modelBuilder.Entity("ForgeQA.Domain.Entities.Organization", b =>
@@ -509,6 +630,24 @@ namespace ForgeQA.Infrastructure.Persistence.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
+                });
+
+            modelBuilder.Entity("ForgeQA.Domain.Entities.ArtifactUploadSession", b =>
+                {
+                    b.HasOne("ForgeQA.Domain.Entities.BuildArtifact", null)
+                        .WithMany()
+                        .HasForeignKey("ArtifactId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ForgeQA.Domain.Entities.BuildArtifact", b =>
+                {
+                    b.HasOne("ForgeQA.Domain.Entities.Build", null)
+                        .WithMany()
+                        .HasForeignKey("BuildId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ForgeQA.Domain.Entities.OrganizationMember", b =>

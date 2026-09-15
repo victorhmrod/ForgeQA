@@ -1,9 +1,11 @@
+using ForgeQA.Application.Abstractions;
 using ForgeQA.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Testcontainers.PostgreSql;
 
 namespace ForgeQA.IntegrationTests;
@@ -30,6 +32,11 @@ public class ForgeQAWebApplicationFactory : WebApplicationFactory<Program>, IAsy
             });
         });
 
+        builder.ConfigureServices(services =>
+        {
+            services.RemoveAll<IArtifactStorage>();
+            services.AddSingleton<IArtifactStorage, FakeArtifactStorage>();
+        });
     }
 
     public async Task InitializeAsync()

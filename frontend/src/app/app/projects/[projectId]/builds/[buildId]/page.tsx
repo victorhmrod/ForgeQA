@@ -8,6 +8,7 @@ import { CONFIGURATION_LABELS, PLATFORM_LABELS, buildsApi, type UpdateBuildInput
 import { ApiError } from "@/lib/api/client";
 import { Badge } from "@/components/badge";
 import { BuildForm } from "@/components/build-form";
+import { ArtifactsSection } from "@/components/artifacts-section";
 
 export default function BuildDetailPage() {
   const { projectId, buildId } = useParams<{ projectId: string; buildId: string }>();
@@ -55,7 +56,7 @@ export default function BuildDetailPage() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-8">
+    <main className="mx-auto max-w-4xl px-6 py-8">
       <Link href={`/app/projects/${projectId}/builds`} className="text-sm text-accent hover:underline">
         &larr; Back to builds
       </Link>
@@ -101,6 +102,8 @@ export default function BuildDetailPage() {
           <Section title="Environment">
             <Field label="Engine version" value={build.engineVersion ?? "—"} />
           </Section>
+
+          <ArtifactsSection projectId={projectId} buildId={buildId} buildArchived={Boolean(build.archivedAt)} />
 
           <Section title="Changelog">
             <p className="whitespace-pre-wrap text-sm text-foreground">{build.changelog ?? "No changelog provided."}</p>

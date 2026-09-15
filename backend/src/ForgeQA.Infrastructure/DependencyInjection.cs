@@ -1,8 +1,10 @@
 using ForgeQA.Application.Abstractions;
+using ForgeQA.Application.Artifacts;
 using ForgeQA.Infrastructure.Auth;
 using ForgeQA.Infrastructure.Identity;
 using ForgeQA.Infrastructure.Persistence;
 using ForgeQA.Infrastructure.Persistence.Repositories;
+using ForgeQA.Infrastructure.Storage;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -32,12 +34,16 @@ public static class DependencyInjection
             .AddEntityFrameworkStores<ForgeQADbContext>();
 
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+        services.Configure<ArtifactStorageOptions>(configuration.GetSection(ArtifactStorageOptions.SectionName));
+        services.Configure<S3StorageOptions>(configuration.GetSection(ArtifactStorageOptions.SectionName));
 
         services.AddScoped<IOrganizationRepository, OrganizationRepository>();
         services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<IBuildRepository, BuildRepository>();
+        services.AddScoped<IArtifactRepository, ArtifactRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IIdentityService, IdentityService>();
+        services.AddSingleton<IArtifactStorage, S3ArtifactStorage>();
 
         return services;
     }

@@ -36,6 +36,39 @@ services:
     networks:
       - forgeqa
 
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-forgeqa}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me-minio}
+      MINIO_BUCKET: ${MINIO_BUCKET:-forgeqa-artifacts}
+      CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+    entrypoint: >-
+      /bin/sh -c '
+      mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}";
+      mc mb --ignore-existing local/"$${MINIO_BUCKET}";
+      mc anonymous set none local/"$${MINIO_BUCKET}";
+      cat > /tmp/cors.xml <<EOF
+      <CORSConfiguration>
+        <CORSRule>
+          <AllowedOrigin>$${CORS_ALLOWED_ORIGIN}</AllowedOrigin>
+          <AllowedMethod>GET</AllowedMethod>
+          <AllowedMethod>PUT</AllowedMethod>
+          <AllowedMethod>HEAD</AllowedMethod>
+          <AllowedHeader>*</AllowedHeader>
+          <ExposeHeader>ETag</ExposeHeader>
+          <MaxAgeSeconds>3600</MaxAgeSeconds>
+        </CORSRule>
+      </CORSConfiguration>
+      EOF
+      mc cors set local/"$${MINIO_BUCKET}" /tmp/cors.xml;
+      '
+    networks:
+      - forgeqa
+
   backend:
     build:
       context: ./backend
@@ -49,12 +82,26 @@ services:
       Jwt__Audience: ${JWT_AUDIENCE:-ForgeQA}
       Jwt__AccessTokenMinutes: ${JWT_ACCESS_TOKEN_MINUTES:-15}
       Jwt__RefreshTokenDays: ${JWT_REFRESH_TOKEN_DAYS:-30}
+      ArtifactStorage__Endpoint: ${MINIO_ENDPOINT:-http://minio:9000}
+      ArtifactStorage__PublicEndpoint: ${MINIO_PUBLIC_ENDPOINT:-http://localhost:9000}
+      ArtifactStorage__Region: ${MINIO_REGION:-us-east-1}
+      ArtifactStorage__Bucket: ${MINIO_BUCKET:-forgeqa-artifacts}
+      ArtifactStorage__AccessKey: ${MINIO_ROOT_USER:-forgeqa}
+      ArtifactStorage__SecretKey: ${MINIO_ROOT_PASSWORD:-change-me-minio}
+      ArtifactStorage__ForcePathStyle: "true"
+      ArtifactStorage__MultipartPartSizeBytes: ${ARTIFACT_PART_SIZE_BYTES:-67108864}
+      ArtifactStorage__MaxArtifactSizeBytes: ${ARTIFACT_MAX_SIZE_BYTES:-107374182400}
+      ArtifactStorage__UploadSessionLifetimeMinutes: ${ARTIFACT_UPLOAD_SESSION_MINUTES:-60}
+      ArtifactStorage__DownloadUrlLifetimeMinutes: ${ARTIFACT_DOWNLOAD_URL_MINUTES:-10}
+      ArtifactStorage__MaxPresignedPartsPerRequest: ${ARTIFACT_MAX_PRESIGNED_PARTS:-50}
       Cors__AllowedOrigins__0: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
     ports:
       - "${BACKEND_PORT:-5000}:8080"
     depends_on:
       postgres:
         condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 10s
