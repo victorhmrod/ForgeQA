@@ -145,6 +145,23 @@ Conventions established in this codebase — follow them rather than introducing
   or resolve `IConfiguration` inside a factory delegate (see `AddJwtBearer`'s `JwtBearerOptions`
   setup and `AddInfrastructure`'s `AddDbContext` in `DependencyInjection.cs`) for anything that
   must reflect test-time overrides.
+- **Dual authentication schemes for endpoints a packaged game must call.** `"Bearer"` (JWT, for the
+  web dashboard) and `"ForgeQAProjectKey"` (a Project-scoped API key, for the Unreal runtime) are
+  both registered in `Program.cs`; an endpoint that must accept either declares
+  `[Authorize(AuthenticationSchemes = "Bearer,ForgeQAProjectKey")]` explicitly — plain `[Authorize]`
+  means JWT-only. The API key travels as `X-ForgeQA-Key`, never `Authorization: Bearer`, so it can
+  never collide with JWT parsing on a dual-scheme endpoint. Resolve "who is the caller" via
+  `ClaimsPrincipal.ToBugReportAuthor()` (`BugReportAuthorExtensions`), which checks for API-key
+  claims first and falls back to the JWT `sub`; branch application-layer authorization on the
+  resulting `BugReportAuthor.IsApiKey` rather than re-deriving auth-method from raw claims in
+  service code. See `docs/bug-reporting.md` for the full model (hashing, scopes, revocation).
+- **`IObjectStorage` is the generic storage primitive; `IArtifactStorage` extends it with
+  multipart-only operations.** Introduced in M4 when Bug Reporting needed simple single-PUT
+  screenshot storage without pulling in Build Distribution's multipart-upload machinery. A new
+  storage consumer should depend on `IObjectStorage` unless it genuinely needs multipart (large
+  file) semantics — don't add single-shot methods to `IArtifactStorage` or bypass the interface
+  split. Both interfaces are implemented by the same `S3ArtifactStorage` singleton, registered once
+  and exposed under both service types in DI.
 
 ### Testing
 
@@ -218,8 +235,23 @@ This environment has no Unreal Engine installation: the plugin's C++ has never b
 Treat any Unreal-side change as unverified until someone runs it against a real UE 5.8 install —
 don't claim compilation or editor behavior succeeded without actually having run it.
 
+### Bug reporting subsystem (M4, `Source/ForgeQA/`)
+
+`UForgeQABugReportingSubsystem` is a separate `UGameInstanceSubsystem` from `UForgeQASubsystem` —
+identity/Build-Context resolution and bug submission are different responsibilities, kept apart
+deliberately rather than growing one subsystem into a God object. It reads the Build Context and
+runtime API key (`FForgeQARuntimeCredentials::ResolveApiKey()`, precedence: command-line
+`-ForgeQAApiKey=` → `FORGEQA_API_KEY` env var → `UForgeQASettings::DevelopmentRuntimeApiKey`,
+a per-developer `config` property, never `defaultconfig`) rather than owning either itself.
+`UForgeQABugReportWidget` is a `UUserWidget` **C++ base class only** — its visual layout is a
+Widget Blueprint `.uasset` that must be authored inside the Editor and cannot be produced by this
+repository's text-based tooling; don't attempt to fabricate one. See `docs/bug-reporting.md` for
+the full submission state machine and screenshot upload flow.
+
 ## Docker Compose services
 
 `docker-compose.yml` defines `postgres`, `minio` (backs Build Distribution's S3-compatible artifact
-storage — see `docs/build-distribution.md`), `backend`, and `frontend`, wired together via
-environment variables sourced from `.env` (copy from `.env.example`, never commit `.env`).
+storage and, since M4, Bug Reporting's screenshot storage via the shared `IObjectStorage`
+abstraction — see `docs/build-distribution.md` and `docs/bug-reporting.md`), `backend`, and
+`frontend`, wired together via environment variables sourced from `.env` (copy from
+`.env.example`, never commit `.env`).

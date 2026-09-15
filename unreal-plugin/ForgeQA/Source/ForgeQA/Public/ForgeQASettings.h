@@ -41,6 +41,19 @@ public:
     UPROPERTY(Config, VisibleAnywhere, Category = "ForgeQA|Editor", meta = (DisplayName = "Last Selected Build ID"))
     FGuid DefaultBuildId;
 
+    /**
+     * DEVELOPMENT CONVENIENCE ONLY. A Project API key (see docs/bug-reporting.md) the runtime uses
+     * to submit bug reports. Deliberately a plain `config` property (per-developer Saved/Config,
+     * never committed) — never `defaultconfig`, and never written into the Build manifest.
+     *
+     * A packaged Shipping build should not rely on this field: inject the key via
+     * -ForgeQAApiKey=<key> on the command line or the FORGEQA_API_KEY environment variable
+     * instead (see UForgeQARuntimeCredentials), which a future CI pipeline can supply without
+     * ever needing this settings value to be set at all.
+     */
+    UPROPERTY(Config, EditAnywhere, Category = "ForgeQA|Bug Reporting", meta = (DisplayName = "Runtime API Key (dev only)", PasswordField = true))
+    FString DevelopmentRuntimeApiKey;
+
     /** Returns ApiBaseUrl with exactly one trailing slash removed, so callers can safely append "/api/...". */
     FString GetNormalizedApiBaseUrl() const;
 };

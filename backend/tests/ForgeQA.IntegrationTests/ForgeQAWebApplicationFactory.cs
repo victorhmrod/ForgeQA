@@ -35,7 +35,10 @@ public class ForgeQAWebApplicationFactory : WebApplicationFactory<Program>, IAsy
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<IArtifactStorage>();
-            services.AddSingleton<IArtifactStorage, FakeArtifactStorage>();
+            services.RemoveAll<IObjectStorage>();
+            services.AddSingleton<FakeArtifactStorage>();
+            services.AddSingleton<IArtifactStorage>(sp => sp.GetRequiredService<FakeArtifactStorage>());
+            services.AddSingleton<IObjectStorage>(sp => sp.GetRequiredService<FakeArtifactStorage>());
         });
     }
 

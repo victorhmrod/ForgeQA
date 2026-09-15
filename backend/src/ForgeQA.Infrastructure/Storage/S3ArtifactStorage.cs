@@ -34,6 +34,18 @@ public sealed class S3ArtifactStorage : IArtifactStorage, IDisposable
         return new StorageMultipartUpload(response.UploadId);
     }
 
+    public string CreatePutUrl(string objectKey, string contentType, TimeSpan lifetime)
+    {
+        return _signingClient.GetPreSignedURL(new GetPreSignedUrlRequest
+        {
+            BucketName = _options.Bucket,
+            Key = objectKey,
+            Verb = HttpVerb.PUT,
+            ContentType = contentType,
+            Expires = DateTime.UtcNow.Add(lifetime)
+        });
+    }
+
     public string CreateUploadPartUrl(string objectKey, string providerUploadId, int partNumber, TimeSpan lifetime)
     {
         return _signingClient.GetPreSignedURL(new GetPreSignedUrlRequest

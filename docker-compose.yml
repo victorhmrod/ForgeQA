@@ -46,26 +46,16 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me-minio}
       MINIO_BUCKET: ${MINIO_BUCKET:-forgeqa-artifacts}
       CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
-    entrypoint: >-
-      /bin/sh -c '
-      mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}";
-      mc mb --ignore-existing local/"$${MINIO_BUCKET}";
-      mc anonymous set none local/"$${MINIO_BUCKET}";
-      cat > /tmp/cors.xml <<EOF
-      <CORSConfiguration>
-        <CORSRule>
-          <AllowedOrigin>$${CORS_ALLOWED_ORIGIN}</AllowedOrigin>
-          <AllowedMethod>GET</AllowedMethod>
-          <AllowedMethod>PUT</AllowedMethod>
-          <AllowedMethod>HEAD</AllowedMethod>
-          <AllowedHeader>*</AllowedHeader>
-          <ExposeHeader>ETag</ExposeHeader>
-          <MaxAgeSeconds>3600</MaxAgeSeconds>
-        </CORSRule>
-      </CORSConfiguration>
-      EOF
-      mc cors set local/"$${MINIO_BUCKET}" /tmp/cors.xml;
-      '
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"
+        mc mb --ignore-existing local/"$${MINIO_BUCKET}"
+        mc anonymous set none local/"$${MINIO_BUCKET}"
+        printf '%s' '<CORSConfiguration><CORSRule><AllowedOrigin>'"$${CORS_ALLOWED_ORIGIN}"'</AllowedOrigin><AllowedMethod>GET</AllowedMethod><AllowedMethod>PUT</AllowedMethod><AllowedMethod>HEAD</AllowedMethod><AllowedHeader>*</AllowedHeader><ExposeHeader>ETag</ExposeHeader><MaxAgeSeconds>3600</MaxAgeSeconds></CORSRule></CORSConfiguration>' > /tmp/cors.xml
+        mc cors set local/"$${MINIO_BUCKET}" /tmp/cors.xml || echo "WARNING: this MinIO image/version rejected the CORS configuration request; browser-direct upload/download from a different origin may be blocked until this is addressed. See docs/bug-reporting.md."
     networks:
       - forgeqa
 

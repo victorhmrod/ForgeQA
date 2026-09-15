@@ -19,7 +19,12 @@ public class ForgeQA : ModuleRules
             "Json",
             "JsonUtilities",
             "DeveloperSettings",
-            "Projects"
+            "Projects",
+            "UMG",
+            "Slate",
+            "SlateCore",
+            "ImageWrapper",
+            "RenderCore"
         });
     }
 }

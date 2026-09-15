@@ -18,6 +18,10 @@ public:
     static bool TryParseProjects(const FString& JsonBody, const FGuid& OrganizationId, TArray<FForgeQAProjectSummary>& OutProjects);
     static bool TryParsePagedBuilds(const FString& JsonBody, TArray<FForgeQABuildSummary>& OutBuilds);
     static bool TryParseBuildDetail(const FString& JsonBody, FForgeQABuildSummary& OutBuild);
+    static bool TryParseBugReportResult(const FString& JsonBody, FForgeQABugReportResult& OutResult);
+    static bool TryParseInitiateAttachmentResult(const FString& JsonBody, FForgeQAInitiateAttachmentResult& OutResult);
+    static FString SerializeCreateBugReportRequest(const FForgeQACreateBugReportRequest& Request);
+    static FString SerializeInitiateAttachmentRequest(const FForgeQAInitiateAttachmentRequest& Request);
 
     /** Parses an ASP.NET Core ProblemDetails body ({"title","status","detail"}) into a display message. */
     static void ParseProblemDetails(const FString& JsonBody, int32 StatusCode, FForgeQAApiError& OutError);

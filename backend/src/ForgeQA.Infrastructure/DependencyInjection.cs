@@ -1,5 +1,6 @@
 using ForgeQA.Application.Abstractions;
 using ForgeQA.Application.Artifacts;
+using ForgeQA.Application.Bugs;
 using ForgeQA.Infrastructure.Auth;
 using ForgeQA.Infrastructure.Identity;
 using ForgeQA.Infrastructure.Persistence;
@@ -36,14 +37,19 @@ public static class DependencyInjection
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
         services.Configure<ArtifactStorageOptions>(configuration.GetSection(ArtifactStorageOptions.SectionName));
         services.Configure<S3StorageOptions>(configuration.GetSection(ArtifactStorageOptions.SectionName));
+        services.Configure<BugReportingOptions>(configuration.GetSection(BugReportingOptions.SectionName));
 
         services.AddScoped<IOrganizationRepository, OrganizationRepository>();
         services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<IBuildRepository, BuildRepository>();
         services.AddScoped<IArtifactRepository, ArtifactRepository>();
+        services.AddScoped<IBugRepository, BugRepository>();
+        services.AddScoped<IProjectApiKeyRepository, ProjectApiKeyRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IIdentityService, IdentityService>();
-        services.AddSingleton<IArtifactStorage, S3ArtifactStorage>();
+        services.AddSingleton<S3ArtifactStorage>();
+        services.AddSingleton<IArtifactStorage>(sp => sp.GetRequiredService<S3ArtifactStorage>());
+        services.AddSingleton<IObjectStorage>(sp => sp.GetRequiredService<S3ArtifactStorage>());
 
         return services;
     }

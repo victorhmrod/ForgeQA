@@ -40,11 +40,11 @@ namespace ForgeQA.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<int>("ExpectedParts")
                         .HasColumnType("integer");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<long>("PartSizeBytes")
                         .HasColumnType("bigint");
@@ -61,6 +61,138 @@ namespace ForgeQA.Infrastructure.Persistence.Migrations
                     b.HasIndex("ExpiresAt");
 
                     b.ToTable("ArtifactUploadSessions", (string)null);
+                });
+
+            modelBuilder.Entity("ForgeQA.Domain.Entities.BugAttachment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BugReportId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("StorageObjectKey")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BugReportId");
+
+                    b.ToTable("BugAttachments", (string)null);
+                });
+
+            modelBuilder.Entity("ForgeQA.Domain.Entities.BugReport", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("BuildId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(8000)
+                        .HasColumnType("character varying(8000)");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ReporterDisplayName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid?>("ReporterUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ReproductionSteps")
+                        .HasMaxLength(8000)
+                        .HasColumnType("character varying(8000)");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("RuntimeSessionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BuildId");
+
+                    b.HasIndex("ProjectId", "BuildId");
+
+                    b.HasIndex("ProjectId", "CreatedAt");
+
+                    b.HasIndex("ProjectId", "Severity");
+
+                    b.HasIndex("ProjectId", "Source");
+
+                    b.HasIndex("ProjectId", "Status");
+
+                    b.ToTable("BugReports", (string)null);
                 });
 
             modelBuilder.Entity("ForgeQA.Domain.Entities.Build", b =>
@@ -322,46 +454,55 @@ namespace ForgeQA.Infrastructure.Persistence.Migrations
                     b.ToTable("Projects", (string)null);
                 });
 
-            modelBuilder.Entity("ForgeQA.Domain.Entities.Report", b =>
+            modelBuilder.Entity("ForgeQA.Domain.Entities.ProjectApiKey", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("BuildId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Description")
-                        .HasMaxLength(4000)
-                        .HasColumnType("character varying(4000)");
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("KeyHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTime?>("LastUsedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Prefix")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
 
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("SessionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("character varying(300)");
-
-                    b.Property<DateTime>("UpdatedAt")
+                    b.Property<DateTime?>("RevokedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Scopes")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("Scopes");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Prefix");
+
                     b.HasIndex("ProjectId");
 
-                    b.ToTable("Reports", (string)null);
+                    b.ToTable("ProjectApiKeys", (string)null);
                 });
 
             modelBuilder.Entity("ForgeQA.Domain.Entities.Session", b =>
@@ -641,6 +782,83 @@ namespace ForgeQA.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ForgeQA.Domain.Entities.BugAttachment", b =>
+                {
+                    b.HasOne("ForgeQA.Domain.Entities.BugReport", null)
+                        .WithMany("Attachments")
+                        .HasForeignKey("BugReportId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ForgeQA.Domain.Entities.BugReport", b =>
+                {
+                    b.HasOne("ForgeQA.Domain.Entities.Build", null)
+                        .WithMany()
+                        .HasForeignKey("BuildId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.OwnsOne("ForgeQA.Domain.Entities.BugEnvironment", "Environment", b1 =>
+                        {
+                            b1.Property<Guid>("BugReportId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Cpu")
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("Environment_Cpu");
+
+                            b1.Property<string>("EngineVersion")
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("Environment_EngineVersion");
+
+                            b1.Property<string>("GameMode")
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("Environment_GameMode");
+
+                            b1.Property<string>("Gpu")
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("Environment_Gpu");
+
+                            b1.Property<string>("Locale")
+                                .HasMaxLength(20)
+                                .HasColumnType("character varying(20)")
+                                .HasColumnName("Environment_Locale");
+
+                            b1.Property<string>("MapName")
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("Environment_MapName");
+
+                            b1.Property<long?>("MemoryBytes")
+                                .HasColumnType("bigint")
+                                .HasColumnName("Environment_MemoryBytes");
+
+                            b1.Property<string>("OsVersion")
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("Environment_OsVersion");
+
+                            b1.Property<string>("Platform")
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("Environment_Platform");
+
+                            b1.HasKey("BugReportId");
+
+                            b1.ToTable("BugReports");
+
+                            b1.WithOwner()
+                                .HasForeignKey("BugReportId");
+                        });
+
+                    b.Navigation("Environment")
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ForgeQA.Domain.Entities.BuildArtifact", b =>
                 {
                     b.HasOne("ForgeQA.Domain.Entities.Build", null)
@@ -717,6 +935,11 @@ namespace ForgeQA.Infrastructure.Persistence.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("ForgeQA.Domain.Entities.BugReport", b =>
+                {
+                    b.Navigation("Attachments");
                 });
 
             modelBuilder.Entity("ForgeQA.Domain.Entities.Organization", b =>

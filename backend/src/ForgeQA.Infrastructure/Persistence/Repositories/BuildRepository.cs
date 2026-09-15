@@ -17,6 +17,9 @@ public class BuildRepository : IBuildRepository
     public Task<Build?> GetByIdForProjectAsync(Guid projectId, Guid buildId, CancellationToken cancellationToken) =>
         _dbContext.Builds.FirstOrDefaultAsync(b => b.Id == buildId && b.ProjectId == projectId, cancellationToken);
 
+    public Task<List<Build>> GetByIdsAsync(IReadOnlyCollection<Guid> buildIds, CancellationToken cancellationToken) =>
+        _dbContext.Builds.Where(b => buildIds.Contains(b.Id)).ToListAsync(cancellationToken);
+
     public async Task<(IReadOnlyList<Build> Items, int TotalCount)> QueryAsync(BuildQuery query, CancellationToken cancellationToken)
     {
         var builds = _dbContext.Builds.Where(b => b.ProjectId == query.ProjectId);

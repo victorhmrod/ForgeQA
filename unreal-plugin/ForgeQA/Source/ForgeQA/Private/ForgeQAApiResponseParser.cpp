@@ -175,6 +175,90 @@ bool FForgeQAApiResponseParser::TryParseBuildDetail(const FString& JsonBody, FFo
     return OutBuild.Id.IsValid();
 }
 
+bool FForgeQAApiResponseParser::TryParseBugReportResult(const FString& JsonBody, FForgeQABugReportResult& OutResult)
+{
+    TSharedPtr<FJsonObject> Root;
+    if (!ParseJsonObject(JsonBody, Root))
+    {
+        return false;
+    }
+
+    OutResult.BugReportId = ParseGuidField(Root, TEXT("id"));
+    return OutResult.BugReportId.IsValid();
+}
+
+bool FForgeQAApiResponseParser::TryParseInitiateAttachmentResult(const FString& JsonBody, FForgeQAInitiateAttachmentResult& OutResult)
+{
+    TSharedPtr<FJsonObject> Root;
+    if (!ParseJsonObject(JsonBody, Root))
+    {
+        return false;
+    }
+
+    OutResult.AttachmentId = ParseGuidField(Root, TEXT("attachmentId"));
+    OutResult.UploadUrl = GetStringField(Root, TEXT("uploadUrl"));
+    return OutResult.AttachmentId.IsValid() && !OutResult.UploadUrl.IsEmpty();
+}
+
+FString FForgeQAApiResponseParser::SerializeCreateBugReportRequest(const FForgeQACreateBugReportRequest& Request)
+{
+    const TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
+
+    if (Request.BuildId.IsValid())
+    {
+        Root->SetStringField(TEXT("buildId"), Request.BuildId.ToString(EGuidFormats::DigitsWithHyphens));
+    }
+    else
+    {
+        Root->SetField(TEXT("buildId"), MakeShared<FJsonValueNull>());
+    }
+
+    Root->SetStringField(TEXT("title"), Request.Title);
+    Root->SetStringField(TEXT("description"), Request.Description);
+    Root->SetStringField(TEXT("reproductionSteps"), Request.ReproductionSteps);
+    Root->SetStringField(TEXT("severity"), Request.Severity);
+    Root->SetStringField(TEXT("source"), Request.Source);
+
+    if (Request.RuntimeSessionId.IsValid())
+    {
+        Root->SetStringField(TEXT("runtimeSessionId"), Request.RuntimeSessionId.ToString(EGuidFormats::DigitsWithHyphens));
+    }
+
+    const TSharedRef<FJsonObject> EnvironmentObject = MakeShared<FJsonObject>();
+    EnvironmentObject->SetStringField(TEXT("mapName"), Request.Environment.MapName);
+    EnvironmentObject->SetStringField(TEXT("gameMode"), Request.Environment.GameMode);
+    EnvironmentObject->SetStringField(TEXT("platform"), Request.Environment.Platform);
+    EnvironmentObject->SetStringField(TEXT("engineVersion"), Request.Environment.EngineVersion);
+    EnvironmentObject->SetStringField(TEXT("osVersion"), Request.Environment.OsVersion);
+    EnvironmentObject->SetStringField(TEXT("cpu"), Request.Environment.Cpu);
+    EnvironmentObject->SetStringField(TEXT("gpu"), Request.Environment.Gpu);
+    if (Request.Environment.MemoryBytes > 0)
+    {
+        EnvironmentObject->SetNumberField(TEXT("memoryBytes"), static_cast<double>(Request.Environment.MemoryBytes));
+    }
+    EnvironmentObject->SetStringField(TEXT("locale"), Request.Environment.Locale);
+    Root->SetObjectField(TEXT("environment"), EnvironmentObject);
+
+    FString Output;
+    const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Output);
+    FJsonSerializer::Serialize(Root, Writer);
+    return Output;
+}
+
+FString FForgeQAApiResponseParser::SerializeInitiateAttachmentRequest(const FForgeQAInitiateAttachmentRequest& Request)
+{
+    const TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
+    Root->SetStringField(TEXT("type"), Request.Type);
+    Root->SetStringField(TEXT("fileName"), Request.FileName);
+    Root->SetStringField(TEXT("contentType"), Request.ContentType);
+    Root->SetNumberField(TEXT("sizeBytes"), static_cast<double>(Request.SizeBytes));
+
+    FString Output;
+    const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Output);
+    FJsonSerializer::Serialize(Root, Writer);
+    return Output;
+}
+
 void FForgeQAApiResponseParser::ParseProblemDetails(const FString& JsonBody, int32 StatusCode, FForgeQAApiError& OutError)
 {
     OutError.StatusCode = StatusCode;

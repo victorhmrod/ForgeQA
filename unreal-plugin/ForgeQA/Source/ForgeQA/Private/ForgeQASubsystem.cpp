@@ -9,6 +9,10 @@ void UForgeQASubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
 
+    // Generated exactly once per GameInstance lifetime — every Bug Report submitted during this
+    // play session shares this token; a new session ID is only generated on the next launch.
+    RuntimeSessionId = FGuid::NewGuid();
+
     FForgeQABuildContext ResolvedContext;
 
     if (TryResolveFromCommandLine(ResolvedContext))

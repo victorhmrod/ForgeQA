@@ -27,6 +27,18 @@ TSharedRef<IHttpRequest> FForgeQAApiClient::CreateRequest(const FString& Verb, c
     return Request;
 }
 
+TSharedRef<IHttpRequest> FForgeQAApiClient::CreateApiKeyRequest(const FString& Verb, const FString& Path, const FString& ProjectApiKey) const
+{
+    const TSharedRef<IHttpRequest> Request = FHttpModule::Get().CreateRequest();
+    Request->SetURL(ApiBaseUrl + Path);
+    Request->SetVerb(Verb);
+    Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
+    // Deliberately not "Authorization: Bearer" — see ProjectApiKeyDefaults on the backend for why
+    // a dedicated header keeps a Project key from ever being confused with a user JWT.
+    Request->SetHeader(TEXT("X-ForgeQA-Key"), ProjectApiKey);
+    return Request;
+}
+
 bool FForgeQAApiClient::TryExtractError(const FHttpResponsePtr& Response, bool bConnectedSuccessfully, FForgeQAApiError& OutError)
 {
     if (!bConnectedSuccessfully || !Response.IsValid())
@@ -193,6 +205,113 @@ void FForgeQAApiClient::GetBuildDetail(const FString& AccessToken, const FGuid& 
             }
 
             OnComplete(true, Build, FForgeQAApiError());
+        });
+
+    Request->ProcessRequest();
+}
+
+void FForgeQAApiClient::CreateBugReport(const FString& ProjectApiKey, const FGuid& ProjectId, const FForgeQACreateBugReportRequest& BugRequest, FCreateBugReportCallback OnComplete)
+{
+    const FString Path = FString::Printf(TEXT("/api/projects/%s/bugs"), *ProjectId.ToString(EGuidFormats::DigitsWithHyphens));
+    const TSharedRef<IHttpRequest> Request = CreateApiKeyRequest(TEXT("POST"), Path, ProjectApiKey);
+    Request->SetContentAsString(FForgeQAApiResponseParser::SerializeCreateBugReportRequest(BugRequest));
+
+    Request->OnProcessRequestComplete().BindLambda(
+        [OnComplete](FHttpRequestPtr, FHttpResponsePtr Response, bool bConnectedSuccessfully)
+        {
+            FForgeQAApiError Error;
+            if (TryExtractError(Response, bConnectedSuccessfully, Error))
+            {
+                OnComplete(false, FForgeQABugReportResult(), Error);
+                return;
+            }
+
+            FForgeQABugReportResult Result;
+            if (!FForgeQAApiResponseParser::TryParseBugReportResult(Response->GetContentAsString(), Result))
+            {
+                FForgeQAApiError ParseError;
+                ParseError.Code = TEXT("InvalidResponse");
+                ParseError.Message = TEXT("ForgeQA API returned a response that could not be parsed.");
+                OnComplete(false, FForgeQABugReportResult(), ParseError);
+                return;
+            }
+
+            OnComplete(true, Result, FForgeQAApiError());
+        });
+
+    Request->ProcessRequest();
+}
+
+void FForgeQAApiClient::InitiateBugAttachment(const FString& ProjectApiKey, const FGuid& ProjectId, const FGuid& BugId, const FForgeQAInitiateAttachmentRequest& AttachmentRequest, FInitiateAttachmentCallback OnComplete)
+{
+    const FString Path = FString::Printf(
+        TEXT("/api/projects/%s/bugs/%s/attachments"),
+        *ProjectId.ToString(EGuidFormats::DigitsWithHyphens), *BugId.ToString(EGuidFormats::DigitsWithHyphens));
+    const TSharedRef<IHttpRequest> Request = CreateApiKeyRequest(TEXT("POST"), Path, ProjectApiKey);
+    Request->SetContentAsString(FForgeQAApiResponseParser::SerializeInitiateAttachmentRequest(AttachmentRequest));
+
+    Request->OnProcessRequestComplete().BindLambda(
+        [OnComplete](FHttpRequestPtr, FHttpResponsePtr Response, bool bConnectedSuccessfully)
+        {
+            FForgeQAApiError Error;
+            if (TryExtractError(Response, bConnectedSuccessfully, Error))
+            {
+                OnComplete(false, FForgeQAInitiateAttachmentResult(), Error);
+                return;
+            }
+
+            FForgeQAInitiateAttachmentResult Result;
+            if (!FForgeQAApiResponseParser::TryParseInitiateAttachmentResult(Response->GetContentAsString(), Result))
+            {
+                FForgeQAApiError ParseError;
+                ParseError.Code = TEXT("InvalidResponse");
+                ParseError.Message = TEXT("ForgeQA API returned a response that could not be parsed.");
+                OnComplete(false, FForgeQAInitiateAttachmentResult(), ParseError);
+                return;
+            }
+
+            OnComplete(true, Result, FForgeQAApiError());
+        });
+
+    Request->ProcessRequest();
+}
+
+void FForgeQAApiClient::CompleteBugAttachment(const FString& ProjectApiKey, const FGuid& ProjectId, const FGuid& BugId, const FGuid& AttachmentId, FCompleteAttachmentCallback OnComplete)
+{
+    const FString Path = FString::Printf(
+        TEXT("/api/projects/%s/bugs/%s/attachments/%s/complete"),
+        *ProjectId.ToString(EGuidFormats::DigitsWithHyphens), *BugId.ToString(EGuidFormats::DigitsWithHyphens), *AttachmentId.ToString(EGuidFormats::DigitsWithHyphens));
+    const TSharedRef<IHttpRequest> Request = CreateApiKeyRequest(TEXT("POST"), Path, ProjectApiKey);
+
+    Request->OnProcessRequestComplete().BindLambda(
+        [OnComplete](FHttpRequestPtr, FHttpResponsePtr Response, bool bConnectedSuccessfully)
+        {
+            FForgeQAApiError Error;
+            if (TryExtractError(Response, bConnectedSuccessfully, Error))
+            {
+                OnComplete(false, Error);
+                return;
+            }
+
+            OnComplete(true, FForgeQAApiError());
+        });
+
+    Request->ProcessRequest();
+}
+
+void FForgeQAApiClient::PutObject(const FString& UploadUrl, const FString& ContentType, TArray<uint8> Bytes, FPutObjectCallback OnComplete)
+{
+    const TSharedRef<IHttpRequest> Request = FHttpModule::Get().CreateRequest();
+    Request->SetURL(UploadUrl);
+    Request->SetVerb(TEXT("PUT"));
+    Request->SetHeader(TEXT("Content-Type"), ContentType);
+    Request->SetContent(MoveTemp(Bytes));
+
+    Request->OnProcessRequestComplete().BindLambda(
+        [OnComplete](FHttpRequestPtr, FHttpResponsePtr Response, bool bConnectedSuccessfully)
+        {
+            const bool bOk = bConnectedSuccessfully && Response.IsValid() && Response->GetResponseCode() >= 200 && Response->GetResponseCode() < 300;
+            OnComplete(bOk);
         });
 
     Request->ProcessRequest();

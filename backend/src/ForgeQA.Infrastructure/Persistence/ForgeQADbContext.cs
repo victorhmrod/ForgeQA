@@ -19,7 +19,9 @@ public class ForgeQADbContext : IdentityDbContext<ApplicationUser, IdentityRole<
     public DbSet<BuildArtifact> BuildArtifacts => Set<BuildArtifact>();
     public DbSet<ArtifactUploadSession> ArtifactUploadSessions => Set<ArtifactUploadSession>();
     public DbSet<Session> Sessions => Set<Session>();
-    public DbSet<Report> Reports => Set<Report>();
+    public DbSet<BugReport> BugReports => Set<BugReport>();
+    public DbSet<BugAttachment> BugAttachments => Set<BugAttachment>();
+    public DbSet<ProjectApiKey> ProjectApiKeys => Set<ProjectApiKey>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder builder)

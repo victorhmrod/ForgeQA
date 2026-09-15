@@ -7,10 +7,12 @@ performance analytics, crash reporting, CI/CD, and automated QA into one workflo
 The first integration target is Unreal Engine, while the backend remains engine-agnostic.
 
 > **Project status:** ForgeQA is under active development. The repository is currently at **Milestone
-> 3 — Unreal Integration** and is not yet production-ready. The Unreal plugin code for M3 has not
-> been compiled or run against a real Unreal Engine installation — see
-> [`docs/unreal-integration.md`](docs/unreal-integration.md#manual-unreal-validation) for exactly
-> what is and isn't verified.
+> 4 — Bug Reporting (first public MVP)** and is not yet production-ready. Backend, storage, and
+> frontend for M4 are implemented and tested; the Unreal runtime side (bug reporting subsystem,
+> screenshot capture, in-game submission) has not been compiled or run against a real Unreal Engine
+> installation — see
+> [`docs/bug-reporting.md`](docs/bug-reporting.md#manual-unreal-validation-status) for exactly what
+> is and isn't verified.
 
 ## What works today
 
@@ -32,6 +34,11 @@ Included today:
   runtime `ForgeQABuildContext` (C++ and Blueprint), and a packaged build manifest — see
   [`docs/unreal-integration.md`](docs/unreal-integration.md). Compilation against a real UE 5.8
   installation has not been verified in this environment.
+- Bug Reporting: `BugReport`/`BugAttachment` domain model, dual JWT/Project-API-key authentication,
+  rate-limited runtime ingestion, screenshot upload via presigned URLs, and a web dashboard for
+  listing/filtering/triaging bugs and managing Project API keys. Unreal-side bug reporting
+  (subsystem, screenshot capture, in-game widget) is written but not compiled/run against a real
+  UE 5.8 installation — see [`docs/bug-reporting.md`](docs/bug-reporting.md).
 - PostgreSQL persistence with Entity Framework Core migrations.
 - Next.js web frontend with login, registration, project, and build management views.
 - Docker Compose development environment for PostgreSQL, MinIO, the API, and the frontend.
@@ -42,7 +49,7 @@ The planned roadmap is:
 
 ```text
 M0 Foundation → M1 Build Registry → M2 Build Distribution → M3 Unreal Integration →
-M4 Bug Reporting → M5 Telemetry → M6 Performance → M7 Crash Reporting → M8 CI/CD →
+M4 Bug Reporting (current) → M5 Telemetry → M6 Performance → M7 Crash Reporting → M8 CI/CD →
 M9 Automated QA → M10 Regression Detection → M11 Integrations → M12 AI
 ```
 
@@ -208,10 +215,20 @@ plugin is not compiled in CI because that requires a full Unreal Engine installa
 | `GET` | `/api/projects/{projectId}/builds/{buildId}/artifacts/{artifactId}` | Yes | Get an artifact |
 | `POST` | `/api/projects/{projectId}/builds/{buildId}/artifacts/{artifactId}/download` | Yes | Get a signed download URL |
 | `DELETE` | `/api/projects/{projectId}/builds/{buildId}/artifacts/{artifactId}` | Yes | Delete an artifact |
+| `POST` | `/api/projects/{projectId}/bugs` | JWT or Project key | Create a bug report |
+| `GET` | `/api/projects/{projectId}/bugs` | Yes | List a project's bugs (paginated/filtered/searched) |
+| `GET` | `/api/projects/{projectId}/bugs/{bugId}` | Yes | Get a bug report |
+| `PATCH` | `/api/projects/{projectId}/bugs/{bugId}` | Yes | Update editable bug fields / change status |
+| `POST` | `/api/projects/{projectId}/bugs/{bugId}/attachments` | JWT or Project key | Initiate a screenshot/log attachment upload |
+| `POST` | `/api/projects/{projectId}/bugs/{bugId}/attachments/{attachmentId}/complete` | JWT or Project key | Verify and finalize an attachment upload |
+| `POST` | `/api/projects/{projectId}/bugs/{bugId}/attachments/{attachmentId}/download` | Yes | Get a signed attachment download URL |
+| `POST` | `/api/projects/{projectId}/api-keys` | Yes | Create a Project API key (plaintext shown once) |
+| `GET` | `/api/projects/{projectId}/api-keys` | Yes | List a project's API keys |
+| `POST` | `/api/projects/{projectId}/api-keys/{keyId}/revoke` | Yes | Revoke a Project API key |
 | `GET` | `/health` | No | Check API and PostgreSQL health |
 
-See [`docs/build-registry.md`](docs/build-registry.md) and [`docs/build-distribution.md`](docs/build-distribution.md)
-for field semantics, filters, and example requests.
+See [`docs/build-registry.md`](docs/build-registry.md), [`docs/build-distribution.md`](docs/build-distribution.md),
+and [`docs/bug-reporting.md`](docs/bug-reporting.md) for field semantics, filters, and example requests.
 
 ## Contributing
 

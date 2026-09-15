@@ -1,12 +1,17 @@
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
+using ForgeQA.Api.Auth;
 using ForgeQA.Api.Middleware;
 using ForgeQA.Application;
+using ForgeQA.Application.Bugs;
 using ForgeQA.Infrastructure;
 using ForgeQA.Infrastructure.Auth;
 using ForgeQA.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 
@@ -26,7 +31,9 @@ builder.Services
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
         options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
     })
-    .AddJwtBearer();
+    .AddJwtBearer()
+    .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, ProjectApiKeyAuthenticationHandler>(
+        ProjectApiKeyDefaults.AuthenticationScheme, _ => { });
 
 // Bound lazily from IConfiguration when the handler is first resolved, so config overrides
 // applied after CreateBuilder() (e.g. WebApplicationFactory in tests) are honored. Reading
@@ -60,6 +67,29 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(corsOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod();
+    });
+});
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // Partitioned per Project API key (falling back to remote IP for JWT-authenticated or
+    // unauthenticated callers) so one runtime key being noisy never throttles another Project.
+    options.AddPolicy(RateLimiting.BugIngestionPolicy, httpContext =>
+    {
+        var partitionKey = httpContext.User.FindFirst(ProjectApiKeyDefaults.ProjectApiKeyIdClaim)?.Value
+            ?? httpContext.Connection.RemoteIpAddress?.ToString()
+            ?? "unknown";
+
+        var maxPerMinute = httpContext.RequestServices.GetRequiredService<IOptions<BugReportingOptions>>().Value.MaxRuntimeReportsPerMinutePerKey;
+
+        return RateLimitPartition.GetFixedWindowLimiter(partitionKey, _ => new FixedWindowRateLimiterOptions
+        {
+            Window = TimeSpan.FromMinutes(1),
+            PermitLimit = maxPerMinute,
+            QueueLimit = 0
+        });
     });
 });
 
@@ -106,6 +136,7 @@ app.UseCors("Default");
 app.UseAuthentication();
 app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllers();
 app.MapHealthChecks("/health");

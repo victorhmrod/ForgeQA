@@ -60,3 +60,48 @@ struct FORGEQA_API FForgeQABuildSummary
         return Name.IsEmpty() ? FString::Printf(TEXT("%s (%s)"), *Version, *BuildNumber) : Name;
     }
 };
+
+/** Diagnostic context sent alongside a bug report. Every field is optional; omit anything unavailable. */
+struct FORGEQA_API FForgeQABugEnvironment
+{
+    FString MapName;
+    FString GameMode;
+    FString Platform;
+    FString EngineVersion;
+    FString OsVersion;
+    FString Cpu;
+    FString Gpu;
+    int64 MemoryBytes = 0;
+    FString Locale;
+};
+
+struct FORGEQA_API FForgeQACreateBugReportRequest
+{
+    FGuid BuildId; // Invalid FGuid() means "no Build correlation".
+    FString Title;
+    FString Description;
+    FString ReproductionSteps;
+    FString Severity;    // "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
+    FString Source;      // "UNREAL_RUNTIME" | "WEB" | "API"
+    FGuid RuntimeSessionId;
+    FForgeQABugEnvironment Environment;
+};
+
+struct FORGEQA_API FForgeQABugReportResult
+{
+    FGuid BugReportId;
+};
+
+struct FORGEQA_API FForgeQAInitiateAttachmentRequest
+{
+    FString Type; // "SCREENSHOT" | "LOG" | "OTHER"
+    FString FileName;
+    FString ContentType;
+    int64 SizeBytes = 0;
+};
+
+struct FORGEQA_API FForgeQAInitiateAttachmentResult
+{
+    FGuid AttachmentId;
+    FString UploadUrl;
+};

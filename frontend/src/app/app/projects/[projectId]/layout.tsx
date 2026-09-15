@@ -18,6 +18,8 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
   const tabs = [
     { label: "Overview", href: basePath },
     { label: "Builds", href: `${basePath}/builds` },
+    { label: "Bugs", href: `${basePath}/bugs` },
+    { label: "API Keys", href: `${basePath}/api-keys` },
   ];
 
   return (

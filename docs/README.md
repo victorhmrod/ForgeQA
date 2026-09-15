@@ -6,5 +6,7 @@
   S3-compatible upload/download.
 - [Unreal Integration](unreal-integration.md) — Milestone 3: the Unreal Engine plugin, Build
   Context resolution, the Editor linking workflow, and the manifest format.
+- [Bug Reporting](bug-reporting.md) — Milestone 4: the `BugReport`/`BugAttachment` domain model,
+  Project API keys, screenshot storage, the runtime submission flow, and the web dashboard.
 
 For general setup and the overall roadmap, see the repository root [README.md](../README.md).

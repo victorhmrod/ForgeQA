@@ -13,6 +13,14 @@ public sealed class FakeArtifactStorage : IArtifactStorage
     public string CreateUploadPartUrl(string objectKey, string providerUploadId, int partNumber, TimeSpan lifetime) =>
         $"https://storage.test/upload/{Uri.EscapeDataString(objectKey)}?uploadId={providerUploadId}&partNumber={partNumber}";
 
+    public string CreatePutUrl(string objectKey, string contentType, TimeSpan lifetime) =>
+        $"https://storage.test/put/{Uri.EscapeDataString(objectKey)}";
+
+    /// <summary>Test-only hook standing in for "the client actually PUT the bytes to storage",
+    /// since these integration tests have no real S3-compatible endpoint to receive one.</summary>
+    public void SimulateUpload(string objectKey, long sizeBytes) =>
+        _objects[objectKey] = new StorageObjectMetadata(sizeBytes, null);
+
     public Task CompleteMultipartUploadAsync(
         string objectKey,
         string providerUploadId,

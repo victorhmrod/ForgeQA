@@ -1,4 +1,7 @@
 import { apiClient } from "./client";
+import type { PagedResult } from "./pagination";
+
+export type { PagedResult };
 
 export type BuildPlatform = "WINDOWS" | "LINUX" | "MACOS";
 export type BuildConfigurationValue = "DEBUG" | "DEBUG_GAME" | "DEVELOPMENT" | "TEST" | "SHIPPING";
@@ -47,14 +50,6 @@ export interface Build {
   };
   createdAt: string;
   updatedAt: string;
-}
-
-export interface PagedResult<T> {
-  items: T[];
-  page: number;
-  pageSize: number;
-  totalCount: number;
-  totalPages: number;
 }
 
 export interface CreateBuildInput {

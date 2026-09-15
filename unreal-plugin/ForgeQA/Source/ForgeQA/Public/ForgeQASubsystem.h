@@ -42,6 +42,15 @@ public:
     UFUNCTION(BlueprintPure, Category = "ForgeQA", DisplayName = "Get ForgeQA Build ID")
     FGuid GetBuildId() const { return BuildContext.BuildId; }
 
+    /**
+     * A local correlation token generated once when this GameInstance starts (see Initialize())
+     * and held for its entire lifetime — every Bug Report submitted during this play session
+     * carries the same RuntimeSessionId. Not a server-side concept in M4; a future milestone may
+     * turn it into a persisted TelemetrySession, but nothing here assumes that will happen.
+     */
+    UFUNCTION(BlueprintPure, Category = "ForgeQA", DisplayName = "Get ForgeQA Runtime Session ID")
+    FGuid GetRuntimeSessionId() const { return RuntimeSessionId; }
+
     // Exposed as public static, stateless resolution steps so they can be exercised directly by
     // automation tests (see Private/Tests/ForgeQABuildContextPrecedenceTests.cpp) without needing
     // a live UGameInstance. Each returns false without side effects when its source is absent.
@@ -56,4 +65,7 @@ public:
 private:
     UPROPERTY()
     FForgeQABuildContext BuildContext;
+
+    UPROPERTY()
+    FGuid RuntimeSessionId;
 };

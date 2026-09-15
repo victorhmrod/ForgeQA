@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { projectsApi } from "@/lib/api/projects";
 import { buildsApi } from "@/lib/api/builds";
+import { bugsApi } from "@/lib/api/bugs";
 
 export default function ProjectDashboardPage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -17,6 +18,11 @@ export default function ProjectDashboardPage() {
   const { data: builds } = useQuery({
     queryKey: ["builds", projectId, { page: 1, pageSize: 1 }],
     queryFn: () => buildsApi.list(projectId, { page: 1, pageSize: 1 }),
+  });
+
+  const { data: bugs } = useQuery({
+    queryKey: ["bugs", projectId, { page: 1, pageSize: 1 }],
+    queryFn: () => bugsApi.list(projectId, { page: 1, pageSize: 1 }),
   });
 
   if (isLoading) {
@@ -41,8 +47,10 @@ export default function ProjectDashboardPage() {
             count={builds?.totalCount}
           />
         </Link>
+        <Link href={`/app/projects/${projectId}/bugs`}>
+          <DashboardSection title="Bugs" emptyLabel="No bugs reported yet." count={bugs?.totalCount} />
+        </Link>
         <DashboardSection title="Sessions" emptyLabel="No sessions yet." />
-        <DashboardSection title="Reports" emptyLabel="No reports yet." />
       </div>
     </main>
   );
