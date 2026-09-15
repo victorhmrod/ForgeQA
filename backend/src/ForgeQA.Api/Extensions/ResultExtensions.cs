@@ -17,6 +17,7 @@ public static class ResultExtensions
             ErrorType.Unauthorized => new ObjectResult(Problem(result, 401)) { StatusCode = 401 },
             ErrorType.Conflict => new ConflictObjectResult(Problem(result, 409)),
             ErrorType.Validation => controller.BadRequest(Problem(result, 400)),
+            ErrorType.Internal => new ObjectResult(Problem(result, 500)) { StatusCode = 500 },
             _ => controller.BadRequest(Problem(result, 400))
         };
     }

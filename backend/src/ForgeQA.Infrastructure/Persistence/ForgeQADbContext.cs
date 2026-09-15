@@ -16,6 +16,8 @@ public class ForgeQADbContext : IdentityDbContext<ApplicationUser, IdentityRole<
     public DbSet<OrganizationMember> OrganizationMembers => Set<OrganizationMember>();
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<Build> Builds => Set<Build>();
+    public DbSet<BuildArtifact> BuildArtifacts => Set<BuildArtifact>();
+    public DbSet<ArtifactUploadSession> ArtifactUploadSessions => Set<ArtifactUploadSession>();
     public DbSet<Session> Sessions => Set<Session>();
     public DbSet<Report> Reports => Set<Report>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();

@@ -7,7 +7,8 @@ public enum ErrorType
     NotFound,
     Conflict,
     Forbidden,
-    Unauthorized
+    Unauthorized,
+    Internal
 }
 
 public class Result<T>

@@ -1,4 +1,5 @@
 using ForgeQA.Application.Auth;
+using ForgeQA.Application.Artifacts;
 using ForgeQA.Application.Builds;
 using ForgeQA.Application.Organizations;
 using ForgeQA.Application.Projects;
@@ -14,6 +15,7 @@ public static class DependencyInjection
         services.AddScoped<OrganizationService>();
         services.AddScoped<ProjectService>();
         services.AddScoped<BuildService>();
+        services.AddScoped<ArtifactService>();
         return services;
     }
 }
