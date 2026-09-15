@@ -7,12 +7,16 @@ performance analytics, crash reporting, CI/CD, and automated QA into one workflo
 The first integration target is Unreal Engine, while the backend remains engine-agnostic.
 
 > **Project status:** ForgeQA is under active development. The repository is currently at **Milestone
-> 1 — Build Registry** and is not yet production-ready.
+> 3 — Unreal Integration** and is not yet production-ready. The Unreal plugin code for M3 has not
+> been compiled or run against a real Unreal Engine installation — see
+> [`docs/unreal-integration.md`](docs/unreal-integration.md#manual-unreal-validation) for exactly
+> what is and isn't verified.
 
 ## What works today
 
 ```text
-Register or log in → create an organization → create a project → register and manage builds
+Register or log in → create an organization → create a project → register a build →
+upload/download a build artifact → link an Unreal project to that Build
 ```
 
 Included today:
@@ -22,11 +26,17 @@ Included today:
 - Project creation and listing.
 - Build Registry: register, list (paginated/filtered/searched), view, edit, archive, and restore
   builds, scoped to project membership. See [`docs/build-registry.md`](docs/build-registry.md).
+- Build Distribution: multipart, S3-compatible artifact upload/download against MinIO in
+  development, scoped to project membership. See [`docs/build-distribution.md`](docs/build-distribution.md).
+- Unreal Engine plugin (`unreal-plugin/ForgeQA`): Editor login/Project/Build linking, an offline
+  runtime `ForgeQABuildContext` (C++ and Blueprint), and a packaged build manifest — see
+  [`docs/unreal-integration.md`](docs/unreal-integration.md). Compilation against a real UE 5.8
+  installation has not been verified in this environment.
 - PostgreSQL persistence with Entity Framework Core migrations.
 - Next.js web frontend with login, registration, project, and build management views.
 - Docker Compose development environment for PostgreSQL, MinIO, the API, and the frontend.
 - Unit and integration test projects (backend) and a Vitest + Testing Library suite (frontend).
-- Initial Avalonia launcher and Unreal Engine plugin scaffolds.
+- Initial Avalonia launcher scaffold.
 
 The planned roadmap is:
 
@@ -138,9 +148,14 @@ dotnet run
 
 ### Unreal plugin
 
-Copy or symlink `unreal-plugin/ForgeQA` into
-`<YourUnrealProject>/Plugins/ForgeQA`, then enable **ForgeQA** in the Unreal Editor's Plugins
-window. The current plugin only registers an empty runtime module.
+Copy or symlink `unreal-plugin/ForgeQA` into `<YourUnrealProject>/Plugins/ForgeQA`, then enable
+**ForgeQA** in the Unreal Editor's Plugins window (UE 5.8.x). Configure the API URL and link a
+Project/Build via **Tools > ForgeQA**. See [`docs/unreal-integration.md`](docs/unreal-integration.md)
+for the full workflow, the Build Context resolution precedence, and the manifest format.
+
+**This has not been compiled or run against a real Unreal Engine installation in this repository's
+development environment** — see [`docs/unreal-integration.md`](docs/unreal-integration.md#manual-unreal-validation)
+before relying on it.
 
 ## Tests and checks
 
@@ -185,9 +200,18 @@ plugin is not compiled in CI because that requires a full Unreal Engine installa
 | `PATCH` | `/api/projects/{projectId}/builds/{buildId}` | Yes | Update editable build metadata |
 | `POST` | `/api/projects/{projectId}/builds/{buildId}/archive` | Yes | Archive a build |
 | `POST` | `/api/projects/{projectId}/builds/{buildId}/restore` | Yes | Restore an archived build |
+| `POST` | `/api/projects/{projectId}/builds/{buildId}/artifacts/uploads` | Yes | Initiate a multipart artifact upload |
+| `POST` | `/api/projects/{projectId}/builds/{buildId}/artifacts/{artifactId}/upload-parts` | Yes | Get signed URLs for upload parts |
+| `POST` | `/api/projects/{projectId}/builds/{buildId}/artifacts/{artifactId}/complete` | Yes | Complete a multipart upload |
+| `POST` | `/api/projects/{projectId}/builds/{buildId}/artifacts/{artifactId}/abort` | Yes | Abort a multipart upload |
+| `GET` | `/api/projects/{projectId}/builds/{buildId}/artifacts` | Yes | List a build's artifacts |
+| `GET` | `/api/projects/{projectId}/builds/{buildId}/artifacts/{artifactId}` | Yes | Get an artifact |
+| `POST` | `/api/projects/{projectId}/builds/{buildId}/artifacts/{artifactId}/download` | Yes | Get a signed download URL |
+| `DELETE` | `/api/projects/{projectId}/builds/{buildId}/artifacts/{artifactId}` | Yes | Delete an artifact |
 | `GET` | `/health` | No | Check API and PostgreSQL health |
 
-See [`docs/build-registry.md`](docs/build-registry.md) for field semantics, filters, and example requests.
+See [`docs/build-registry.md`](docs/build-registry.md) and [`docs/build-distribution.md`](docs/build-distribution.md)
+for field semantics, filters, and example requests.
 
 ## Contributing
 

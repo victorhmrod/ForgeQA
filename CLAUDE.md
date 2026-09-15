@@ -38,7 +38,7 @@ backend/            ASP.NET Core API (C#, .NET 10, EF Core, PostgreSQL, ASP.NET 
     ForgeQA.IntegrationTests/  full HTTP stack via WebApplicationFactory + Testcontainers Postgres
 frontend/           Next.js App Router, TypeScript, TanStack Query, Tailwind v4
 launcher/ForgeQA.Launcher/   Avalonia desktop launcher (foundation only, no build download/launch yet)
-unreal-plugin/ForgeQA/       Unreal Engine 5.8 plugin scaffold (empty runtime module only)
+unreal-plugin/ForgeQA/       Unreal Engine 5.8 plugin: ForgeQA (Runtime) + ForgeQAEditor (Editor-only)
 docs/                Per-milestone documentation (domain model, API, scope boundaries)
 ```
 
@@ -188,8 +188,38 @@ Conventions established in this codebase — follow them rather than introducing
   `node_modules/next/dist/docs/` before relying on remembered Next.js APIs, especially around
   routing, params, and caching.
 
+## Unreal plugin architecture (`unreal-plugin/ForgeQA/`)
+
+Two modules, one-directional dependency:
+
+- **`ForgeQA`** (Runtime, `Source/ForgeQA/`) — everything a packaged game needs: settings
+  (`UForgeQASettings`), the Blueprint-visible `FForgeQABuildContext`, manifest read/write
+  (`ForgeQABuildManifest.h/.cpp`), the HTTP client and its separated JSON parsing
+  (`ForgeQAApiClient` / `ForgeQAApiResponseParser` — kept apart so parsing is unit-testable with
+  literal JSON strings, no live server needed), and `UForgeQASubsystem`. Depends only on
+  `Core`/`CoreUObject`/`Engine`/`HTTP`/`Json`/`JsonUtilities`/`DeveloperSettings`/`Projects` —
+  **never** `UnrealEd`/`Slate`/`ToolMenus`. Enforce this boundary for any new runtime code.
+- **`ForgeQAEditor`** (Editor-only, `Source/ForgeQAEditor/`) — the Tools > ForgeQA Slate panel,
+  `FForgeQAEditorSession` (login + the single reusable binding-validation routine used by both
+  "Validate" and "Apply" — don't duplicate that check elsewhere), and the
+  `ForgeQAGenerateBuildManifest` commandlet for future CI use.
+
+**Build identity resolution never contacts the ForgeQA API at runtime** (a packaged build must
+know its own identity offline). Precedence, implemented in `UForgeQASubsystem`'s public static
+`TryResolveFrom*` methods (kept public specifically so automation tests can call them without a
+live `UGameInstance`): command-line override (`-ForgeQAProjectId=` / `-ForgeQABuildId=`) → packaged
+manifest (`Content/ForgeQA/ForgeQABuild.json`) → Project Settings (`ProjectId` only — Settings
+alone can never supply a `BuildId`). See `docs/unreal-integration.md` for the full rationale,
+including why `UForgeQASettings.DefaultBuildId` is a plain (per-developer, gitignored) `config`
+property while `ApiBaseUrl`/`ProjectId` are `defaultconfig` (committed) — that split is deliberate,
+not an oversight.
+
+This environment has no Unreal Engine installation: the plugin's C++ has never been compiled here.
+Treat any Unreal-side change as unverified until someone runs it against a real UE 5.8 install —
+don't claim compilation or editor behavior succeeded without actually having run it.
+
 ## Docker Compose services
 
-`docker-compose.yml` defines `postgres`, `minio` (provisioned for a future milestone's artifact
-storage — not consumed by any current feature), `backend`, and `frontend`, wired together via
+`docker-compose.yml` defines `postgres`, `minio` (backs Build Distribution's S3-compatible artifact
+storage — see `docs/build-distribution.md`), `backend`, and `frontend`, wired together via
 environment variables sourced from `.env` (copy from `.env.example`, never commit `.env`).

@@ -1,23 +1,26 @@
 using UnrealBuildTool;
 
-public class ForgeQA : ModuleRules
+public class ForgeQAEditor : ModuleRules
 {
-    public ForgeQA(ReadOnlyTargetRules Target) : base(Target)
+    public ForgeQAEditor(ReadOnlyTargetRules Target) : base(Target)
     {
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
         PublicDependencyModuleNames.AddRange(new[]
         {
-            "Core"
+            "Core",
+            "ForgeQA"
         });
 
         PrivateDependencyModuleNames.AddRange(new[]
         {
             "CoreUObject",
             "Engine",
-            "HTTP",
-            "Json",
-            "JsonUtilities",
+            "Slate",
+            "SlateCore",
+            "UnrealEd",
+            "ToolMenus",
+            "InputCore",
             "DeveloperSettings",
             "Projects"
         });

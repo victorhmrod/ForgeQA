@@ -20,6 +20,11 @@
       "Name": "ForgeQA",
       "Type": "Runtime",
       "LoadingPhase": "Default"
+    },
+    {
+      "Name": "ForgeQAEditor",
+      "Type": "Editor",
+      "LoadingPhase": "Default"
     }
   ]
 }
