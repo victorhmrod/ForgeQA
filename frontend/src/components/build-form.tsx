@@ -74,11 +74,10 @@ export function BuildForm({ mode, initialBuild, onSubmit, onCancel, submitLabel 
     <form onSubmit={handleSubmit} className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="QA Candidate" />
-        <FormField label="Version" required value={version} onChange={(e) => setVersion(e.target.value)} placeholder="0.4.2" />
+        <FormField label="Version" value={version} onChange={(e) => setVersion(e.target.value)} placeholder="0.4.2" />
 
         <FormField
           label="Build number"
-          required
           value={buildNumber}
           onChange={(e) => setBuildNumber(e.target.value)}
           placeholder="1842"

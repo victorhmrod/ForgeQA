@@ -49,7 +49,7 @@ jobs:
         run: dotnet test tests/ForgeQA.IntegrationTests -c Release --logger "trx"
 
   frontend:
-    name: Frontend (install, lint, typecheck, build)
+    name: Frontend (install, lint, typecheck, test, build)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -71,6 +71,9 @@ jobs:
 
       - name: Typecheck
         run: npx tsc --noEmit
+
+      - name: Unit tests
+        run: npm run test
 
       - name: Build
         run: npm run build

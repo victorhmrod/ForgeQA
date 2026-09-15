@@ -7,14 +7,12 @@ performance analytics, crash reporting, CI/CD, and automated QA into one workflo
 The first integration target is Unreal Engine, while the backend remains engine-agnostic.
 
 > **Project status:** ForgeQA is under active development. The repository is currently at **Milestone
-> 0 — Foundation** and is not yet production-ready.
+> 1 — Build Registry** and is not yet production-ready.
 
 ## What works today
 
-Milestone 0 provides the first usable platform loop:
-
 ```text
-Register or log in → create an organization → create a project → open the dashboard
+Register or log in → create an organization → create a project → register and manage builds
 ```
 
 Included today:
@@ -22,10 +20,12 @@ Included today:
 - ASP.NET Core API with JWT authentication and refresh tokens.
 - Organization membership and role storage.
 - Project creation and listing.
+- Build Registry: register, list (paginated/filtered/searched), view, edit, archive, and restore
+  builds, scoped to project membership. See [`docs/build-registry.md`](docs/build-registry.md).
 - PostgreSQL persistence with Entity Framework Core migrations.
-- Next.js web frontend with login, registration, and project views.
+- Next.js web frontend with login, registration, project, and build management views.
 - Docker Compose development environment for PostgreSQL, MinIO, the API, and the frontend.
-- Unit and integration test projects.
+- Unit and integration test projects (backend) and a Vitest + Testing Library suite (frontend).
 - Initial Avalonia launcher and Unreal Engine plugin scaffolds.
 
 The planned roadmap is:
@@ -159,6 +159,7 @@ Run frontend checks from `frontend/`:
 npm run lint
 npx tsc --noEmit
 npm run build
+npm run test
 ```
 
 The same checks run in GitHub Actions for pushes and pull requests targeting `main`. The Unreal
@@ -178,7 +179,15 @@ plugin is not compiled in CI because that requires a full Unreal Engine installa
 | `POST` | `/api/organizations/{organizationId}/projects` | Yes | Create a project |
 | `GET` | `/api/organizations/{organizationId}/projects` | Yes | List organization projects |
 | `GET` | `/api/projects/{projectId}` | Yes | Get a project |
+| `POST` | `/api/projects/{projectId}/builds` | Yes | Register a build |
+| `GET` | `/api/projects/{projectId}/builds` | Yes | List a project's builds (paginated/filtered/searched) |
+| `GET` | `/api/projects/{projectId}/builds/{buildId}` | Yes | Get a build |
+| `PATCH` | `/api/projects/{projectId}/builds/{buildId}` | Yes | Update editable build metadata |
+| `POST` | `/api/projects/{projectId}/builds/{buildId}/archive` | Yes | Archive a build |
+| `POST` | `/api/projects/{projectId}/builds/{buildId}/restore` | Yes | Restore an archived build |
 | `GET` | `/health` | No | Check API and PostgreSQL health |
+
+See [`docs/build-registry.md`](docs/build-registry.md) for field semantics, filters, and example requests.
 
 ## Contributing
 
