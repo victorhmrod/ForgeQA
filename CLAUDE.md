@@ -1,0 +1,195 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## What this is
+
+ForgeQA is a developer-first platform for game QA: build distribution, playtesting, contextual
+bug reporting, telemetry, performance analytics, crash reporting, CI/CD, and automated QA. The
+initial integration target is Unreal Engine, but the backend is intentionally not coupled to it.
+
+The project is built incrementally through milestones (see `README.md` for the full roadmap and
+current status). Each milestone's implementation notes live under `docs/` (e.g.
+`docs/build-registry.md` for the Build Registry milestone) — check there for the domain rationale
+behind a feature before assuming intent from code alone.
+
+**Never build a feature belonging to a future milestone while implementing the current one.** Scope
+boundaries between milestones are deliberate (e.g. Build Registry stores metadata only; artifact
+upload/storage is a separate, later milestone) — check the relevant `docs/*.md` file for the
+explicit "what's out of scope" section before adding anything that smells like scope creep.
+
+## Commit conventions
+
+- Use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`,
+  `test:`, `refactor:`, `chore:`, etc.) for commit subject lines.
+- Do **not** add a `Co-Authored-By` trailer (Claude or otherwise) to commits in this repository.
+
+## Repository layout
+
+```
+backend/            ASP.NET Core API (C#, .NET 10, EF Core, PostgreSQL, ASP.NET Identity, JWT)
+  src/
+    ForgeQA.Domain/          entities, enums — no framework dependencies
+    ForgeQA.Application/     use-case services, DTOs, repository/service interfaces
+    ForgeQA.Infrastructure/  EF Core, PostgreSQL, Identity, JWT issuance, repositories, migrations
+    ForgeQA.Api/             controllers, middleware, Swagger, health checks, Program.cs
+  tests/
+    ForgeQA.UnitTests/         domain + application logic, no external dependencies
+    ForgeQA.IntegrationTests/  full HTTP stack via WebApplicationFactory + Testcontainers Postgres
+frontend/           Next.js App Router, TypeScript, TanStack Query, Tailwind v4
+launcher/ForgeQA.Launcher/   Avalonia desktop launcher (foundation only, no build download/launch yet)
+unreal-plugin/ForgeQA/       Unreal Engine 5.8 plugin scaffold (empty runtime module only)
+docs/                Per-milestone documentation (domain model, API, scope boundaries)
+```
+
+## Commands
+
+### Backend (run from `backend/`)
+
+```bash
+dotnet restore
+dotnet build
+dotnet test tests/ForgeQA.UnitTests
+dotnet test tests/ForgeQA.IntegrationTests          # requires Docker (Testcontainers spins up Postgres)
+dotnet test tests/ForgeQA.IntegrationTests --filter "FullyQualifiedName~ClassName.MethodName"  # single test
+dotnet run --project src/ForgeQA.Api
+```
+
+Add a migration after changing an entity or EF configuration:
+
+```bash
+dotnet ef migrations add <Name> --project src/ForgeQA.Infrastructure --startup-project src/ForgeQA.Api -o Persistence/Migrations
+```
+
+The API applies pending migrations automatically at startup (`Program.cs`), so there is normally no
+need to run `dotnet ef database update` manually — restarting the API (or the `backend` Docker
+Compose service) is enough. The `dotnet ef` CLI reads `appsettings.json`'s connection string, which
+uses different default credentials than `docker-compose.yml`/`.env`; if you need to run `dotnet ef
+database update` directly against the Compose Postgres, pass a matching `ConnectionStrings__Default`
+override rather than relying on the CLI's default config.
+
+### Frontend (run from `frontend/`)
+
+```bash
+npm install
+npm run dev
+npm run lint
+npx tsc --noEmit
+npm run test          # Vitest + Testing Library
+npm run build
+```
+
+### Full stack
+
+```bash
+cp .env.example .env   # set a real JWT_SECRET (e.g. `openssl rand -base64 64`) and strong passwords
+docker compose up --build
+```
+Frontend on :3000, API on :5000 (`/swagger` in Development, `/health` for the health check), MinIO
+console on :9001.
+
+## Backend architecture
+
+Clean-Architecture-style layering, strictly enforced by project references:
+
+```
+Domain (no EF/ASP.NET/Identity deps) ← Application (use cases, DTOs) ← Infrastructure (EF, Identity, JWT) ← Api
+```
+
+Conventions established in this codebase — follow them rather than introducing parallel patterns:
+
+- **Identity lives in Infrastructure, not Domain.** `ApplicationUser : IdentityUser<Guid>` is an
+  Infrastructure concern; Domain entities only reference users by `Guid` (e.g.
+  `OrganizationMember.UserId`, `Build.CreatedByUserId` + a denormalized `CreatedByDisplayName`
+  snapshot taken at creation time). Don't add a Domain `User` entity or pull Identity types into
+  Domain/Application.
+- **`Result<T>` for expected failures.** Application services return `Result<T>` with an
+  `ErrorType` (NotFound / Forbidden / Conflict / Validation / Unauthorized), mapped to
+  `ProblemDetails` + the matching HTTP status in the API layer via
+  `ResultExtensions.ToActionResult`. Unhandled exceptions go through `UseExceptionHandler()` +
+  `AddProblemDetails()` — never let a stack trace reach the client.
+- **Thin, purpose-built repositories** (`IOrganizationRepository`, `IProjectRepository`,
+  `IBuildRepository`) — only the query shapes actually used by a service, not a generic
+  repository/unit-of-work abstraction. Filtering, searching (via `EF.Functions.ILike`), and
+  pagination happen in the repository's LINQ query, not in application-layer post-filtering.
+- **Authorization propagates down the hierarchy** `Organization → Project → Build`. Every
+  service method that touches a Project or Build re-derives access by loading the parent and
+  checking `IOrganizationRepository.GetMembershipAsync(organizationId, userId)` — there is no
+  cached/claims-based authorization shortcut. Missing membership → `403 Forbidden`; missing
+  entity → `404 NotFound`. Child resources (e.g. a Build) are looked up scoped to both their
+  route-level parent ID and their own ID (`GetByIdForProjectAsync(projectId, buildId)`) so a
+  resource belonging to a different parent resolves as `404`, never leaking existence — replicate
+  this pattern for any new nested resource instead of trusting a bare ID from the route.
+- **Enums serialize as their C# member names**, in upper snake case matching the wire format
+  (e.g. `BuildPlatform.WINDOWS`, `BuildConfiguration.DEBUG_GAME`) — `Program.cs` registers a
+  global `JsonStringEnumConverter`. Any HTTP client reading these responses (including test code)
+  needs the same converter configured or `System.Text.Json` will fail to parse the enum values.
+- **Pagination convention**: `Application.Common.PagedResult<T>` (`Items`, `Page`, `PageSize`,
+  `TotalCount`, `TotalPages`), driven by explicit `page`/`pageSize` query parameters (default 20,
+  capped at 100). List endpoints don't expose a configurable sort parameter — sorting is fixed
+  (`CreatedAt DESC`, then `Id DESC` as a stable tiebreaker) precisely to avoid needing a sort-field
+  allowlist. Follow this for any new paginated list rather than inventing a different shape.
+- **PATCH DTOs only contain editable fields.** Identity/audit fields (`Id`, `ProjectId`,
+  `CreatedBy*`, `CreatedAt`, and any field that's part of a resource's logical uniqueness key,
+  e.g. a Build's `BuildNumber`/`Platform`/`Configuration`) are simply absent from the update DTO's
+  shape — mass-assignment is prevented structurally, not by a runtime allowlist check.
+- **Config values consumed at app-startup time must be read lazily from DI, not eagerly from
+  `builder.Configuration`.** `WebApplicationFactory`-based integration tests inject their own
+  config (e.g. a Testcontainers connection string, a test JWT secret) via
+  `ConfigureWebHost`/`ConfigureAppConfiguration`, but those overrides are only visible to code that
+  reads `IConfiguration` after the host is fully built. Reading a config value eagerly in
+  `Program.cs` top-level statements (e.g. `var secret = builder.Configuration["Jwt:Secret"]` used
+  directly in a closure) silently captures the pre-override value — this previously broke JWT
+  validation and DB connectivity for every authenticated integration test with no useful error
+  (401s / connection failures with a correct-looking token). Use `AddOptions<T>().Configure<IConfiguration>((opts, config) => ...)`
+  or resolve `IConfiguration` inside a factory delegate (see `AddJwtBearer`'s `JwtBearerOptions`
+  setup and `AddInfrastructure`'s `AddDbContext` in `DependencyInjection.cs`) for anything that
+  must reflect test-time overrides.
+
+### Testing
+
+- Unit tests cover Domain invariants (entity constructors/guard clauses) and Application-layer
+  authorization/business logic using in-memory fake repositories (see
+  `tests/ForgeQA.UnitTests/Application/Fake*Repository.cs`) — no EF Core, no database.
+- Integration tests spin up a real ASP.NET Core host (`WebApplicationFactory<Program>`) against a
+  disposable Testcontainers PostgreSQL instance per test class (`ForgeQAWebApplicationFactory`).
+  They exercise real HTTP requests end-to-end, including auth, authorization, and cross-resource
+  IDOR checks (e.g. a build belonging to Project B is never reachable through Project A's route).
+  `tests/ForgeQA.IntegrationTests/xunit.runner.json` disables cross-class parallelization
+  deliberately — running multiple Testcontainers Postgres instances concurrently is expensive and
+  was a source of flakiness; keep this setting when adding new integration test classes.
+- Both require the connection string / JWT secret to be genuinely overridable at runtime — see the
+  lazy-config-read convention above before adding new startup-time configuration reads.
+
+## Frontend architecture
+
+- App Router pages under `src/app/`; a client-side `AuthProvider` (`src/lib/auth/auth-context.tsx`)
+  holds the JWT/refresh token pair in `localStorage` and gates the `/app/*` routes via
+  `components/auth-guard.tsx` — there is no server-side session/middleware auth.
+- All backend calls go through `src/lib/api/*.ts` (one file per backend resource: `auth.ts`,
+  `organizations.ts`, `projects.ts`, `builds.ts`), which wrap a shared `apiClient`
+  (`src/lib/api/client.ts`) that attaches the bearer token and normalizes errors into `ApiError`.
+  Don't call `fetch` directly from components — add a method to the relevant API module instead.
+- Remote state is TanStack Query; each resource has its own query-key convention (e.g.
+  `["builds", projectId, { page, search, platform, configuration, status }]` for the filtered
+  build list) — invalidate the resource's base key (`["builds", projectId]`) after a mutation
+  rather than manually patching cached data.
+- Enum-like backend values (build platform/configuration) get human-readable labels via small
+  `Record` maps in `lib/api/builds.ts` (`PLATFORM_LABELS`, `CONFIGURATION_LABELS`) — the backend
+  wire format stays uppercase/raw; presentation formatting is a frontend-only concern.
+- Tests use Vitest + `@testing-library/react`, configured in `vitest.config.ts`
+  (`jsdom` environment, `@` path alias matching `tsconfig.json`). Mock `next/navigation` and the
+  relevant `lib/api/*` module per test file (see
+  `src/app/app/projects/[projectId]/builds/__tests__/BuildsPage.test.tsx` for the pattern),
+  wrapping the component under test in a fresh `QueryClientProvider`
+  (`__tests__/test-utils.tsx`'s `renderWithQueryClient`).
+- `frontend/AGENTS.md` (auto-generated by `next dev`, do not hand-edit) warns that this Next.js
+  version (16) has breaking changes from training-data assumptions — check
+  `node_modules/next/dist/docs/` before relying on remembered Next.js APIs, especially around
+  routing, params, and caching.
+
+## Docker Compose services
+
+`docker-compose.yml` defines `postgres`, `minio` (provisioned for a future milestone's artifact
+storage — not consumed by any current feature), `backend`, and `frontend`, wired together via
+environment variables sourced from `.env` (copy from `.env.example`, never commit `.env`).
