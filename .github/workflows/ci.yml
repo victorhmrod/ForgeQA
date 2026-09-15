@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend (build, unit tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore -c Release
+
+      - name: Unit tests
+        run: dotnet test tests/ForgeQA.UnitTests --no-build -c Release --logger "trx"
+
+  backend-integration:
+    name: Backend (integration tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Integration tests
+        run: dotnet test tests/ForgeQA.IntegrationTests -c Release --logger "trx"
+
+  frontend:
+    name: Frontend (install, lint, typecheck, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:5000
+
+  launcher:
+    name: Launcher (build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: launcher/ForgeQA.Launcher
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore -c Release
+
+  # The Unreal Engine plugin (unreal-plugin/ForgeQA) is intentionally not compiled in CI.
+  # Compiling a UE plugin requires a full Unreal Engine 5.8 installation (tens of GB) on the
+  # runner, which is impractical for a standard GitHub-hosted runner. This is a deliberate
+  # scope decision for Milestone 0, not an architectural gap: the plugin structure is validated
+  # manually by enabling it in the Unreal Editor (see README.md).

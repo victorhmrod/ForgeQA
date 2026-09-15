@@ -1,8 +1,0 @@
-F:\ForgeQA\backend\src\ForgeQA.Api\obj\Debug\net10.0\ForgeQA.Api.csproj.AssemblyReference.cache
-F:\ForgeQA\backend\src\ForgeQA.Api\obj\Debug\net10.0\rpswa.dswa.cache.json
-F:\ForgeQA\backend\src\ForgeQA.Api\obj\Debug\net10.0\ForgeQA.Api.GeneratedMSBuildEditorConfig.editorconfig
-F:\ForgeQA\backend\src\ForgeQA.Api\obj\Debug\net10.0\ForgeQA.Api.AssemblyInfoInputs.cache
-F:\ForgeQA\backend\src\ForgeQA.Api\obj\Debug\net10.0\ForgeQA.Api.AssemblyInfo.cs
-F:\ForgeQA\backend\src\ForgeQA.Api\obj\Debug\net10.0\ForgeQA.Api.csproj.CoreCompileInputs.cache
-F:\ForgeQA\backend\src\ForgeQA.Api\obj\Debug\net10.0\ForgeQA.Api.MvcApplicationPartsAssemblyInfo.cs
-F:\ForgeQA\backend\src\ForgeQA.Api\obj\Debug\net10.0\ForgeQA.Api.MvcApplicationPartsAssemblyInfo.cache

@@ -22,6 +22,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\ForgeQA.Api\ForgeQA.Api.csproj" />
     <ProjectReference Include="..\..\src\ForgeQA.Infrastructure\ForgeQA.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\ForgeQA.Domain\ForgeQA.Domain.csproj" />

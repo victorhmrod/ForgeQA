@@ -1,0 +1,41 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ForgeQA.Launcher.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="480" d:DesignHeight="320"
+        x:Class="ForgeQA.Launcher.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Width="480" Height="320"
+        CanResize="False"
+        Background="#0A0B0D"
+        Title="ForgeQA Launcher">
+
+    <Design.DataContext>
+        <!-- This only sets the DataContext for the previewer in an IDE,
+             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+        <vm:MainViewModel />
+    </Design.DataContext>
+
+    <StackPanel VerticalAlignment="Center"
+                HorizontalAlignment="Center"
+                Spacing="8">
+        <TextBlock Text="{Binding Title}"
+                    FontSize="28"
+                    FontWeight="Bold"
+                    Foreground="#E6E8EB"
+                    HorizontalAlignment="Center" />
+        <TextBlock Text="{Binding Tagline}"
+                    FontSize="14"
+                    Foreground="#8B8F99"
+                    HorizontalAlignment="Center" />
+        <TextBlock Text="{Binding StatusMessage}"
+                    FontSize="12"
+                    FontFamily="Consolas,monospace"
+                    Foreground="#5B8CFF"
+                    Margin="0,24,0,0"
+                    HorizontalAlignment="Center" />
+    </StackPanel>
+
+</Window>

@@ -14,10 +14,12 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("Default")
-            ?? throw new InvalidOperationException("Connection string 'Default' is not configured.");
-
-        services.AddDbContext<ForgeQADbContext>(options => options.UseNpgsql(connectionString));
+        services.AddDbContext<ForgeQADbContext>((serviceProvider, options) =>
+        {
+            var connectionString = serviceProvider.GetRequiredService<IConfiguration>().GetConnectionString("Default")
+                ?? throw new InvalidOperationException("Connection string 'Default' is not configured.");
+            options.UseNpgsql(connectionString);
+        });
 
         services.AddIdentityCore<ApplicationUser>(options =>
             {
@@ -33,6 +35,7 @@ public static class DependencyInjection
 
         services.AddScoped<IOrganizationRepository, OrganizationRepository>();
         services.AddScoped<IProjectRepository, ProjectRepository>();
+        services.AddScoped<IBuildRepository, BuildRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IIdentityService, IdentityService>();
 

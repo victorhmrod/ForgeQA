@@ -1,0 +1,25 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "0.1.0",
+  "FriendlyName": "ForgeQA",
+  "Description": "ForgeQA developer-first QA, distribution, and playtesting platform integration for Unreal Engine.",
+  "Category": "ForgeQA",
+  "CreatedBy": "ForgeQA",
+  "CreatedByURL": "",
+  "DocsURL": "",
+  "MarketplaceURL": "",
+  "SupportURL": "",
+  "EngineVersion": "5.8.0",
+  "CanContainContent": false,
+  "IsBetaVersion": true,
+  "IsExperimentalVersion": false,
+  "Installed": false,
+  "Modules": [
+    {
+      "Name": "ForgeQA",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    }
+  ]
+}

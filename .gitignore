@@ -1,0 +1,70 @@
+# .NET / C# build output
+[Bb]in/
+[Oo]bj/
+TestResults/
+artifacts/
+packages/
+*.dll
+*.exe
+*.pdb
+*.nupkg
+*.snupkg
+*.user
+*.userosscache
+*.suo
+*.sln.docstates
+
+# IDEs and local tooling
+.vs/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+.fleet/
+*.swp
+*.swo
+
+# Node.js / Next.js
+node_modules/
+.npm/
+.next/
+out/
+dist/
+coverage/
+.turbo/
+.vercel/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment and local configuration
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Local databases and logs
+*.db
+*.sqlite
+*.sqlite3
+*.log
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Unreal Engine generated files
+unreal-plugin/**/Binaries/
+unreal-plugin/**/Intermediate/
+unreal-plugin/**/Saved/
+unreal-plugin/**/DerivedDataCache/
+unreal-plugin/**/Build/
+unreal-plugin/**/*.sln
+unreal-plugin/**/*.suo
+unreal-plugin/**/*.opensdf
+unreal-plugin/**/*.sdf
+unreal-plugin/**/*.VC.db
+unreal-plugin/**/*.VC.VC.opendb
