@@ -54,6 +54,20 @@ public:
     UPROPERTY(Config, EditAnywhere, Category = "ForgeQA|Bug Reporting", meta = (DisplayName = "Runtime API Key (dev only)", PasswordField = true))
     FString DevelopmentRuntimeApiKey;
 
+    /** Master switch for UForgeQATelemetrySubsystem. Telemetry is not compiled out of Shipping —
+     * developers may want it from external playtests — this is a runtime opt-out only. */
+    UPROPERTY(Config, EditAnywhere, Category = "ForgeQA|Telemetry", meta = (DisplayName = "Enable Telemetry"))
+    bool bEnableTelemetry = true;
+
+    UPROPERTY(Config, EditAnywhere, Category = "ForgeQA|Telemetry", meta = (DisplayName = "Flush Interval (seconds)", ClampMin = "1"))
+    float TelemetryFlushIntervalSeconds = 5.0f;
+
+    UPROPERTY(Config, EditAnywhere, Category = "ForgeQA|Telemetry", meta = (DisplayName = "Batch Size", ClampMin = "1"))
+    int32 TelemetryBatchSize = 50;
+
+    UPROPERTY(Config, EditAnywhere, Category = "ForgeQA|Telemetry", meta = (DisplayName = "Max Queued Events", ClampMin = "1"))
+    int32 TelemetryMaxQueuedEvents = 1000;
+
     /** Returns ApiBaseUrl with exactly one trailing slash removed, so callers can safely append "/api/...". */
     FString GetNormalizedApiBaseUrl() const;
 };

@@ -162,6 +162,33 @@ Conventions established in this codebase — follow them rather than introducing
   file) semantics — don't add single-shot methods to `IArtifactStorage` or bypass the interface
   split. Both interfaces are implemented by the same `S3ArtifactStorage` singleton, registered once
   and exposed under both service types in DI.
+- **A Project API key's scope must be checked explicitly wherever it matters — never inferred from
+  "the key exists and matches this Project."** M4 shipped `BugService` checking only
+  `ApiKeyProjectId == projectId`, which was harmless while `BUG_REPORT_WRITE` was the only scope in
+  existence, but became a real authorization gap the moment M5 added `TELEMETRY_WRITE` (a
+  telemetry-only key could still submit bug reports). `BugReportAuthor`/`TelemetryIngestionCaller`
+  both carry the caller's scopes for exactly this reason — when adding a new scoped capability,
+  audit every existing `AuthorizeAsync`-style method for the same "any key from this Project is
+  good enough" shortcut and add the explicit `HasScope`/`HasApiKeyScope` check. See
+  docs/telemetry.md's Security section for the specific fix and its regression test.
+- **Machine-only ingestion endpoints use a single authentication scheme, not the dual-scheme
+  pattern.** Bug Reporting accepts either JWT or Project key (a human can also file a bug via the
+  dashboard); Telemetry ingestion accepts **only** `ForgeQAProjectKey` — there is no
+  dashboard-user equivalent for starting/ingesting/ending a session, so
+  `[Authorize(AuthenticationSchemes = ProjectApiKeyDefaults.AuthenticationScheme)]` alone is
+  correct there. Don't default every new runtime-facing endpoint to the dual-scheme pattern just
+  because Bug Reporting used it — match the endpoint's actual caller population.
+- **Idempotent create endpoints for client-generated identifiers**: `TelemetryService.StartSessionAsync`
+  looks up by the caller-supplied natural key (`ProjectId + RuntimeSessionId`) before constructing a
+  new entity, returning the existing one on a match (and rejecting a mismatched secondary attribute,
+  e.g. a different `BuildId`, as a `409 Conflict` rather than silently mutating identity). Follow
+  this shape for any future endpoint whose caller might retry after a dropped response.
+- **Batch ingestion validates the entire payload before writing anything, and treats a
+  previously-accepted item as a no-op duplicate rather than an error.** See
+  `TelemetryService.IngestEventsAsync`: one bad event fails the whole batch (simpler for a client to
+  retry against), while a duplicate `SequenceNumber` already persisted for the session is silently
+  skipped and counted, computed via a single existence-check query before any `AddRange` — never a
+  per-row `SaveChanges` and never a database unique-constraint violation used as control flow.
 
 ### Testing
 
@@ -248,10 +275,24 @@ Widget Blueprint `.uasset` that must be authored inside the Editor and cannot be
 repository's text-based tooling; don't attempt to fabricate one. See `docs/bug-reporting.md` for
 the full submission state machine and screenshot upload flow.
 
+### Telemetry subsystem (M5, `Source/ForgeQA/`)
+
+`UForgeQATelemetrySubsystem` is a third, separate `UGameInstanceSubsystem` — distinct from both
+`UForgeQASubsystem` (identity only) and `UForgeQABugReportingSubsystem` (bug submission only),
+because telemetry has its own always-running lifecycle (queue/batch/flush/retry) that would bloat
+either of the other two. It reuses `UForgeQASubsystem`'s Build Context/`RuntimeSessionId` and
+`FForgeQARuntimeCredentials` exactly as `UForgeQABugReportingSubsystem` does — never a second
+identity or credential path. `TrackEvent()` never touches the network directly (it validates,
+assigns a sequence number, and enqueues); flushing happens on a size trigger or a timer, with at
+most one flush in flight and bounded exponential backoff on transient failures only (network/5xx/
+429 — never 400/401/403, which are dropped and logged instead of retried forever). See
+`docs/telemetry.md` for the full queue/retry/shutdown behavior and the Blueprint/C++ API surface.
+
 ## Docker Compose services
 
 `docker-compose.yml` defines `postgres`, `minio` (backs Build Distribution's S3-compatible artifact
 storage and, since M4, Bug Reporting's screenshot storage via the shared `IObjectStorage`
 abstraction — see `docs/build-distribution.md` and `docs/bug-reporting.md`), `backend`, and
 `frontend`, wired together via environment variables sourced from `.env` (copy from
-`.env.example`, never commit `.env`).
+`.env.example`, never commit `.env`). Telemetry (M5) stores events directly in PostgreSQL — it does
+not add or use any new Compose service.

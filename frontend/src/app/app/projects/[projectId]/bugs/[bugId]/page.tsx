@@ -17,6 +17,7 @@ import {
   type UpdateBugInput,
 } from "@/lib/api/bugs";
 import { ApiError } from "@/lib/api/client";
+import { telemetryApi } from "@/lib/api/telemetry";
 import { SeverityBadge, StatusBadge } from "@/components/bug-badges";
 import { AttachmentPreview } from "@/components/attachment-preview";
 
@@ -40,6 +41,15 @@ export default function BugDetailPage() {
       setIsEditing(false);
     },
   });
+
+  // Correlated via ProjectId + RuntimeSessionId only — no stored FK, no duplicated telemetry data
+  // on the bug itself. See docs/telemetry.md.
+  const { data: telemetryMatch } = useQuery({
+    queryKey: ["telemetry-sessions", projectId, { runtimeSessionId: bug?.runtimeSessionId }],
+    queryFn: () => telemetryApi.list(projectId, { runtimeSessionId: bug!.runtimeSessionId!, page: 1, pageSize: 1 }),
+    enabled: !!bug?.runtimeSessionId,
+  });
+  const telemetrySessionId = telemetryMatch?.items[0]?.id;
 
   if (isLoading) {
     return <main className="px-6 py-8 text-sm text-muted">Loading...</main>;
@@ -141,6 +151,17 @@ export default function BugDetailPage() {
             {bug.closedAt && <Field label="Closed at" value={new Date(bug.closedAt).toLocaleString()} />}
             {bug.runtimeSessionId && <Field label="Runtime session" value={bug.runtimeSessionId} mono />}
           </Section>
+
+          {telemetrySessionId && (
+            <div>
+              <Link
+                href={`/app/projects/${projectId}/telemetry/${telemetrySessionId}`}
+                className="text-sm text-accent hover:underline"
+              >
+                View telemetry session &rarr;
+              </Link>
+            </div>
+          )}
 
           <div>
             <button

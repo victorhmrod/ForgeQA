@@ -22,6 +22,10 @@ public:
     static bool TryParseInitiateAttachmentResult(const FString& JsonBody, FForgeQAInitiateAttachmentResult& OutResult);
     static FString SerializeCreateBugReportRequest(const FForgeQACreateBugReportRequest& Request);
     static FString SerializeInitiateAttachmentRequest(const FForgeQAInitiateAttachmentRequest& Request);
+    static FString SerializeStartTelemetrySessionRequest(const FForgeQAStartTelemetrySessionRequest& Request);
+    static FString SerializeTelemetryEventsBatch(const TArray<FForgeQATelemetryEvent>& Events);
+    static bool TryParseTelemetrySessionResult(const FString& JsonBody, FForgeQATelemetrySessionResult& OutResult);
+    static bool TryParseIngestTelemetryEventsResult(const FString& JsonBody, FForgeQAIngestTelemetryEventsResult& OutResult);
 
     /** Parses an ASP.NET Core ProblemDetails body ({"title","status","detail"}) into a display message. */
     static void ParseProblemDetails(const FString& JsonBody, int32 StatusCode, FForgeQAApiError& OutError);

@@ -296,6 +296,8 @@ public class BugService
         {
             if (author.ApiKeyProjectId != projectId)
                 return Result<Project>.Failure(ErrorType.Forbidden, "This Project API key is not authorized for this project.");
+            if (!author.HasApiKeyScope(ProjectApiKeyScope.BUG_REPORT_WRITE))
+                return Result<Project>.Failure(ErrorType.Forbidden, "This Project API key does not have the BUG_REPORT_WRITE scope.");
 
             var project = await _projectRepository.GetByIdAsync(projectId, cancellationToken);
             return project is null

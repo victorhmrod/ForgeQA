@@ -5,6 +5,7 @@ using ForgeQA.Application.Bugs;
 using ForgeQA.Application.Organizations;
 using ForgeQA.Application.Projects;
 using ForgeQA.Application.ProjectApiKeys;
+using ForgeQA.Application.Telemetry;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ForgeQA.Application;
@@ -20,6 +21,7 @@ public static class DependencyInjection
         services.AddScoped<ArtifactService>();
         services.AddScoped<BugService>();
         services.AddScoped<ProjectApiKeyService>();
+        services.AddScoped<TelemetryService>();
         return services;
     }
 }

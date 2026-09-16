@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using ForgeQA.Api.Auth;
 using ForgeQA.Application.Bugs;
+using ForgeQA.Domain.Enums;
 
 namespace ForgeQA.Api.Extensions;
 
@@ -16,7 +17,10 @@ public static class BugReportAuthorExtensions
         var apiKeyIdClaim = user.FindFirst(ProjectApiKeyDefaults.ProjectApiKeyIdClaim);
         if (apiKeyIdClaim is not null && apiKeyProjectIdClaim is not null)
         {
-            return BugReportAuthor.FromApiKey(Guid.Parse(apiKeyIdClaim.Value), Guid.Parse(apiKeyProjectIdClaim.Value));
+            var scopes = user.FindAll(ProjectApiKeyDefaults.ProjectApiKeyScopeClaim)
+                .Select(c => Enum.Parse<ProjectApiKeyScope>(c.Value))
+                .ToList();
+            return BugReportAuthor.FromApiKey(Guid.Parse(apiKeyIdClaim.Value), Guid.Parse(apiKeyProjectIdClaim.Value), scopes);
         }
 
         var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? user.FindFirst("sub")?.Value;

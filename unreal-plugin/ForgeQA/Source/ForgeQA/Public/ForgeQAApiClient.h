@@ -29,6 +29,9 @@ public:
     using FInitiateAttachmentCallback = TFunction<void(bool bSuccess, const FForgeQAInitiateAttachmentResult& Result, const FForgeQAApiError& Error)>;
     using FCompleteAttachmentCallback = TFunction<void(bool bSuccess, const FForgeQAApiError& Error)>;
     using FPutObjectCallback = TFunction<void(bool bSuccess)>;
+    using FStartTelemetrySessionCallback = TFunction<void(bool bSuccess, const FForgeQATelemetrySessionResult& Result, const FForgeQAApiError& Error)>;
+    using FSendTelemetryEventsCallback = TFunction<void(bool bSuccess, const FForgeQAIngestTelemetryEventsResult& Result, const FForgeQAApiError& Error)>;
+    using FEndTelemetrySessionCallback = TFunction<void(bool bSuccess, const FForgeQAApiError& Error)>;
 
     /** POST /api/auth/login. AccessToken/RefreshToken in the result are editor-session-only. */
     void Login(const FString& Email, const FString& Password, FLoginCallback OnComplete);
@@ -59,6 +62,16 @@ public:
 
     /** PUTs raw bytes to a presigned object-storage URL returned by InitiateBugAttachment. Not a ForgeQA API call. */
     void PutObject(const FString& UploadUrl, const FString& ContentType, TArray<uint8> Bytes, FPutObjectCallback OnComplete);
+
+    /** POST /api/projects/{projectId}/telemetry/sessions, authenticated with a Project API key
+     * holding TELEMETRY_WRITE. Idempotent server-side — see docs/telemetry.md. */
+    void StartTelemetrySession(const FString& ProjectApiKey, const FGuid& ProjectId, const FForgeQAStartTelemetrySessionRequest& Request, FStartTelemetrySessionCallback OnComplete);
+
+    /** POST /api/projects/{projectId}/telemetry/sessions/{runtimeSessionId}/events, authenticated with a Project API key. */
+    void SendTelemetryEvents(const FString& ProjectApiKey, const FGuid& ProjectId, const FGuid& RuntimeSessionId, const TArray<FForgeQATelemetryEvent>& Events, FSendTelemetryEventsCallback OnComplete);
+
+    /** POST /api/projects/{projectId}/telemetry/sessions/{runtimeSessionId}/end, authenticated with a Project API key. Idempotent. */
+    void EndTelemetrySession(const FString& ProjectApiKey, const FGuid& ProjectId, const FGuid& RuntimeSessionId, FEndTelemetrySessionCallback OnComplete);
 
 private:
     FString ApiBaseUrl;

@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiKeysApi, type ProjectApiKeyCreated } from "@/lib/api/api-keys";
+import {
+  apiKeysApi,
+  PROJECT_API_KEY_SCOPES,
+  PROJECT_API_KEY_SCOPE_LABELS,
+  type ProjectApiKeyCreated,
+  type ProjectApiKeyScope,
+} from "@/lib/api/api-keys";
 import { ApiError } from "@/lib/api/client";
 import { Badge } from "@/components/badge";
 import { FormField } from "@/components/form-field";
@@ -19,11 +25,16 @@ export default function ApiKeysPage() {
   });
 
   const [name, setName] = useState("");
+  const [scopes, setScopes] = useState<ProjectApiKeyScope[]>(["BUG_REPORT_WRITE"]);
   const [error, setError] = useState<string | null>(null);
   const [justCreated, setJustCreated] = useState<ProjectApiKeyCreated | null>(null);
 
+  function toggleScope(scope: ProjectApiKeyScope) {
+    setScopes((current) => (current.includes(scope) ? current.filter((s) => s !== scope) : [...current, scope]));
+  }
+
   const createMutation = useMutation({
-    mutationFn: () => apiKeysApi.create(projectId, name),
+    mutationFn: () => apiKeysApi.create(projectId, name, scopes),
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey });
       setJustCreated(created);
@@ -67,20 +78,36 @@ export default function ApiKeysPage() {
             setError("Name is required.");
             return;
           }
+          if (scopes.length === 0) {
+            setError("Select at least one scope.");
+            return;
+          }
           createMutation.mutate();
         }}
-        className="mb-6 flex items-end gap-2"
+        className="mb-6 flex flex-col gap-3 rounded-lg border border-border bg-surface p-4"
       >
-        <div className="flex-1">
-          <FormField label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Unreal Runtime" />
+        <div className="flex items-end gap-2">
+          <div className="flex-1">
+            <FormField label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Unreal Runtime" />
+          </div>
+          <button
+            type="submit"
+            disabled={createMutation.isPending}
+            className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-60"
+          >
+            {createMutation.isPending ? "Creating..." : "Create key"}
+          </button>
         </div>
-        <button
-          type="submit"
-          disabled={createMutation.isPending}
-          className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-60"
-        >
-          {createMutation.isPending ? "Creating..." : "Create key"}
-        </button>
+
+        <fieldset className="flex flex-col gap-1.5">
+          <legend className="mb-1 text-sm font-medium text-muted">Scopes</legend>
+          {PROJECT_API_KEY_SCOPES.map((scope) => (
+            <label key={scope} className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={scopes.includes(scope)} onChange={() => toggleScope(scope)} />
+              {PROJECT_API_KEY_SCOPE_LABELS[scope]}
+            </label>
+          ))}
+        </fieldset>
       </form>
       {error && <p className="mb-4 text-sm text-danger">{error}</p>}
 
@@ -109,7 +136,7 @@ export default function ApiKeysPage() {
                 <tr key={key.id} className="border-t border-border">
                   <td className="px-4 py-3">{key.name}</td>
                   <td className="px-4 py-3 font-mono text-xs text-muted">fqa_proj_{key.prefix}...</td>
-                  <td className="px-4 py-3 text-muted">{key.scopes.join(", ")}</td>
+                  <td className="px-4 py-3 text-muted">{key.scopes.map((s) => PROJECT_API_KEY_SCOPE_LABELS[s]).join(", ")}</td>
                   <td className="px-4 py-3 text-muted">{new Date(key.createdAt).toLocaleDateString()}</td>
                   <td className="px-4 py-3">
                     <Badge tone={key.revokedAt ? "muted" : "success"}>{key.revokedAt ? "Revoked" : "Active"}</Badge>

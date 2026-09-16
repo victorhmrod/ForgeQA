@@ -1,6 +1,13 @@
 import { apiClient } from "./client";
 
-export type ProjectApiKeyScope = "BUG_REPORT_WRITE";
+export type ProjectApiKeyScope = "BUG_REPORT_WRITE" | "TELEMETRY_WRITE";
+
+export const PROJECT_API_KEY_SCOPES: ProjectApiKeyScope[] = ["BUG_REPORT_WRITE", "TELEMETRY_WRITE"];
+
+export const PROJECT_API_KEY_SCOPE_LABELS: Record<ProjectApiKeyScope, string> = {
+  BUG_REPORT_WRITE: "Bug Report Write",
+  TELEMETRY_WRITE: "Telemetry Write",
+};
 
 export interface ProjectApiKey {
   id: string;
@@ -17,8 +24,8 @@ export interface ProjectApiKeyCreated extends ProjectApiKey {
 }
 
 export const apiKeysApi = {
-  create: (projectId: string, name: string) =>
-    apiClient.post<ProjectApiKeyCreated>(`/api/projects/${projectId}/api-keys`, { name }),
+  create: (projectId: string, name: string, scopes: ProjectApiKeyScope[]) =>
+    apiClient.post<ProjectApiKeyCreated>(`/api/projects/${projectId}/api-keys`, { name, scopes }),
 
   list: (projectId: string) => apiClient.get<ProjectApiKey[]>(`/api/projects/${projectId}/api-keys`),
 

@@ -5,6 +5,7 @@ using ForgeQA.Api.Auth;
 using ForgeQA.Api.Middleware;
 using ForgeQA.Application;
 using ForgeQA.Application.Bugs;
+using ForgeQA.Application.Telemetry;
 using ForgeQA.Infrastructure;
 using ForgeQA.Infrastructure.Auth;
 using ForgeQA.Infrastructure.Persistence;
@@ -83,6 +84,24 @@ builder.Services.AddRateLimiter(options =>
             ?? "unknown";
 
         var maxPerMinute = httpContext.RequestServices.GetRequiredService<IOptions<BugReportingOptions>>().Value.MaxRuntimeReportsPerMinutePerKey;
+
+        return RateLimitPartition.GetFixedWindowLimiter(partitionKey, _ => new FixedWindowRateLimiterOptions
+        {
+            Window = TimeSpan.FromMinutes(1),
+            PermitLimit = maxPerMinute,
+            QueueLimit = 0
+        });
+    });
+
+    // Same per-key partitioning as BugIngestionPolicy, but telemetry's expected volume is much
+    // higher than bug reports, so it gets its own, more permissive limit.
+    options.AddPolicy(RateLimiting.TelemetryIngestionPolicy, httpContext =>
+    {
+        var partitionKey = httpContext.User.FindFirst(ProjectApiKeyDefaults.ProjectApiKeyIdClaim)?.Value
+            ?? httpContext.Connection.RemoteIpAddress?.ToString()
+            ?? "unknown";
+
+        var maxPerMinute = httpContext.RequestServices.GetRequiredService<IOptions<TelemetryOptions>>().Value.MaxBatchesPerMinutePerKey;
 
         return RateLimitPartition.GetFixedWindowLimiter(partitionKey, _ => new FixedWindowRateLimiterOptions
         {

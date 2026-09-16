@@ -14,6 +14,11 @@ vi.mock("@/lib/api/api-keys", () => ({
     create: vi.fn(),
     revoke: vi.fn(),
   },
+  PROJECT_API_KEY_SCOPES: ["BUG_REPORT_WRITE", "TELEMETRY_WRITE"],
+  PROJECT_API_KEY_SCOPE_LABELS: {
+    BUG_REPORT_WRITE: "Bug Report Write",
+    TELEMETRY_WRITE: "Telemetry Write",
+  },
 }));
 
 import { apiKeysApi } from "@/lib/api/api-keys";
@@ -47,7 +52,16 @@ describe("ApiKeysPage", () => {
     renderWithQueryClient(<ApiKeysPage />);
 
     expect(await screen.findByText("Unreal Runtime")).toBeInTheDocument();
-    expect(screen.getByText("BUG_REPORT_WRITE")).toBeInTheDocument();
+    // "Bug Report Write" also appears as a scope checkbox label in the create form.
+    expect(screen.getAllByText("Bug Report Write").length).toBeGreaterThan(0);
+  });
+
+  it("shows both scopes for a key holding multiple", async () => {
+    mockedList.mockResolvedValue([makeKey({ scopes: ["BUG_REPORT_WRITE", "TELEMETRY_WRITE"] })]);
+
+    renderWithQueryClient(<ApiKeysPage />);
+
+    expect(await screen.findByText("Bug Report Write, Telemetry Write")).toBeInTheDocument();
   });
 
   it("shows the empty state when there are no keys", async () => {
@@ -70,6 +84,22 @@ describe("ApiKeysPage", () => {
 
     expect(await screen.findByText("fqa_proj_ab12cd34_secretsecret")).toBeInTheDocument();
     expect(screen.getByText(/cannot be shown again/i)).toBeInTheDocument();
+    expect(mockedCreate).toHaveBeenCalledWith("project-1", "Unreal Runtime", ["BUG_REPORT_WRITE"]);
+  });
+
+  it("lets the user select the Telemetry Write scope before creating a key", async () => {
+    mockedList.mockResolvedValue([]);
+    mockedCreate.mockResolvedValue({ ...makeKey(), plaintextKey: "fqa_proj_ab12cd34_secretsecret" });
+    const user = userEvent.setup();
+
+    renderWithQueryClient(<ApiKeysPage />);
+    await user.type(await screen.findByPlaceholderText("Unreal Runtime"), "Game Server");
+    await user.click(screen.getByLabelText("Telemetry Write"));
+    await user.click(screen.getByRole("button", { name: "Create key" }));
+
+    await waitFor(() =>
+      expect(mockedCreate).toHaveBeenCalledWith("project-1", "Game Server", ["BUG_REPORT_WRITE", "TELEMETRY_WRITE"]),
+    );
   });
 
   it("revokes a key", async () => {

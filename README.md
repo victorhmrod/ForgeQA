@@ -7,12 +7,12 @@ performance analytics, crash reporting, CI/CD, and automated QA into one workflo
 The first integration target is Unreal Engine, while the backend remains engine-agnostic.
 
 > **Project status:** ForgeQA is under active development. The repository is currently at **Milestone
-> 4 — Bug Reporting (first public MVP)** and is not yet production-ready. Backend, storage, and
-> frontend for M4 are implemented and tested; the Unreal runtime side (bug reporting subsystem,
-> screenshot capture, in-game submission) has not been compiled or run against a real Unreal Engine
-> installation — see
-> [`docs/bug-reporting.md`](docs/bug-reporting.md#manual-unreal-validation-status) for exactly what
-> is and isn't verified.
+> 5 — Telemetry** and is not yet production-ready. Backend, storage, and frontend for M0–M5 are
+> implemented and tested; the Unreal runtime side (bug reporting subsystem, screenshot capture,
+> telemetry subsystem, in-game submission) has not been compiled or run against a real Unreal Engine
+> installation — see [`docs/bug-reporting.md`](docs/bug-reporting.md#manual-unreal-validation-status)
+> and [`docs/telemetry.md`](docs/telemetry.md#unreal-integration) for exactly what is and isn't
+> verified.
 
 ## What works today
 
@@ -39,6 +39,11 @@ Included today:
   listing/filtering/triaging bugs and managing Project API keys. Unreal-side bug reporting
   (subsystem, screenshot capture, in-game widget) is written but not compiled/run against a real
   UE 5.8 installation — see [`docs/bug-reporting.md`](docs/bug-reporting.md).
+- Telemetry: `TelemetrySession`/`TelemetryEvent` domain model, batched and idempotent runtime
+  ingestion, a `TELEMETRY_WRITE` Project API key scope, and a web dashboard with a session list and
+  a per-session event timeline. Unreal-side telemetry (subsystem, queuing/batching/retry) is
+  written but not compiled/run against a real UE 5.8 installation — see
+  [`docs/telemetry.md`](docs/telemetry.md).
 - PostgreSQL persistence with Entity Framework Core migrations.
 - Next.js web frontend with login, registration, project, and build management views.
 - Docker Compose development environment for PostgreSQL, MinIO, the API, and the frontend.
@@ -49,7 +54,7 @@ The planned roadmap is:
 
 ```text
 M0 Foundation → M1 Build Registry → M2 Build Distribution → M3 Unreal Integration →
-M4 Bug Reporting (current) → M5 Telemetry → M6 Performance → M7 Crash Reporting → M8 CI/CD →
+M4 Bug Reporting → M5 Telemetry (current) → M6 Performance → M7 Crash Reporting → M8 CI/CD →
 M9 Automated QA → M10 Regression Detection → M11 Integrations → M12 AI
 ```
 
@@ -225,10 +230,17 @@ plugin is not compiled in CI because that requires a full Unreal Engine installa
 | `POST` | `/api/projects/{projectId}/api-keys` | Yes | Create a Project API key (plaintext shown once) |
 | `GET` | `/api/projects/{projectId}/api-keys` | Yes | List a project's API keys |
 | `POST` | `/api/projects/{projectId}/api-keys/{keyId}/revoke` | Yes | Revoke a Project API key |
+| `POST` | `/api/projects/{projectId}/telemetry/sessions` | Project key | Start (or idempotently resume) a telemetry session |
+| `POST` | `/api/projects/{projectId}/telemetry/sessions/{runtimeSessionId}/events` | Project key | Ingest a batch of telemetry events |
+| `POST` | `/api/projects/{projectId}/telemetry/sessions/{runtimeSessionId}/end` | Project key | End a telemetry session |
+| `GET` | `/api/projects/{projectId}/telemetry/sessions` | Yes | List a project's telemetry sessions (paginated/filtered) |
+| `GET` | `/api/projects/{projectId}/telemetry/sessions/{sessionId}` | Yes | Get a telemetry session |
+| `GET` | `/api/projects/{projectId}/telemetry/sessions/{sessionId}/events` | Yes | List a session's events (paginated) |
 | `GET` | `/health` | No | Check API and PostgreSQL health |
 
 See [`docs/build-registry.md`](docs/build-registry.md), [`docs/build-distribution.md`](docs/build-distribution.md),
-and [`docs/bug-reporting.md`](docs/bug-reporting.md) for field semantics, filters, and example requests.
+[`docs/bug-reporting.md`](docs/bug-reporting.md), and [`docs/telemetry.md`](docs/telemetry.md) for
+field semantics, filters, and example requests.
 
 ## Contributing
 

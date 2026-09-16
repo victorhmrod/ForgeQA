@@ -299,6 +299,95 @@ void FForgeQAApiClient::CompleteBugAttachment(const FString& ProjectApiKey, cons
     Request->ProcessRequest();
 }
 
+void FForgeQAApiClient::StartTelemetrySession(const FString& ProjectApiKey, const FGuid& ProjectId, const FForgeQAStartTelemetrySessionRequest& TelemetryRequest, FStartTelemetrySessionCallback OnComplete)
+{
+    const FString Path = FString::Printf(TEXT("/api/projects/%s/telemetry/sessions"), *ProjectId.ToString(EGuidFormats::DigitsWithHyphens));
+    const TSharedRef<IHttpRequest> Request = CreateApiKeyRequest(TEXT("POST"), Path, ProjectApiKey);
+    Request->SetContentAsString(FForgeQAApiResponseParser::SerializeStartTelemetrySessionRequest(TelemetryRequest));
+
+    Request->OnProcessRequestComplete().BindLambda(
+        [OnComplete](FHttpRequestPtr, FHttpResponsePtr Response, bool bConnectedSuccessfully)
+        {
+            FForgeQAApiError Error;
+            if (TryExtractError(Response, bConnectedSuccessfully, Error))
+            {
+                OnComplete(false, FForgeQATelemetrySessionResult(), Error);
+                return;
+            }
+
+            FForgeQATelemetrySessionResult Result;
+            if (!FForgeQAApiResponseParser::TryParseTelemetrySessionResult(Response->GetContentAsString(), Result))
+            {
+                FForgeQAApiError ParseError;
+                ParseError.Code = TEXT("InvalidResponse");
+                ParseError.Message = TEXT("ForgeQA API returned a response that could not be parsed.");
+                OnComplete(false, FForgeQATelemetrySessionResult(), ParseError);
+                return;
+            }
+
+            OnComplete(true, Result, FForgeQAApiError());
+        });
+
+    Request->ProcessRequest();
+}
+
+void FForgeQAApiClient::SendTelemetryEvents(const FString& ProjectApiKey, const FGuid& ProjectId, const FGuid& RuntimeSessionId, const TArray<FForgeQATelemetryEvent>& Events, FSendTelemetryEventsCallback OnComplete)
+{
+    const FString Path = FString::Printf(
+        TEXT("/api/projects/%s/telemetry/sessions/%s/events"),
+        *ProjectId.ToString(EGuidFormats::DigitsWithHyphens), *RuntimeSessionId.ToString(EGuidFormats::DigitsWithHyphens));
+    const TSharedRef<IHttpRequest> Request = CreateApiKeyRequest(TEXT("POST"), Path, ProjectApiKey);
+    Request->SetContentAsString(FForgeQAApiResponseParser::SerializeTelemetryEventsBatch(Events));
+
+    Request->OnProcessRequestComplete().BindLambda(
+        [OnComplete](FHttpRequestPtr, FHttpResponsePtr Response, bool bConnectedSuccessfully)
+        {
+            FForgeQAApiError Error;
+            if (TryExtractError(Response, bConnectedSuccessfully, Error))
+            {
+                OnComplete(false, FForgeQAIngestTelemetryEventsResult(), Error);
+                return;
+            }
+
+            FForgeQAIngestTelemetryEventsResult Result;
+            if (!FForgeQAApiResponseParser::TryParseIngestTelemetryEventsResult(Response->GetContentAsString(), Result))
+            {
+                FForgeQAApiError ParseError;
+                ParseError.Code = TEXT("InvalidResponse");
+                ParseError.Message = TEXT("ForgeQA API returned a response that could not be parsed.");
+                OnComplete(false, FForgeQAIngestTelemetryEventsResult(), ParseError);
+                return;
+            }
+
+            OnComplete(true, Result, FForgeQAApiError());
+        });
+
+    Request->ProcessRequest();
+}
+
+void FForgeQAApiClient::EndTelemetrySession(const FString& ProjectApiKey, const FGuid& ProjectId, const FGuid& RuntimeSessionId, FEndTelemetrySessionCallback OnComplete)
+{
+    const FString Path = FString::Printf(
+        TEXT("/api/projects/%s/telemetry/sessions/%s/end"),
+        *ProjectId.ToString(EGuidFormats::DigitsWithHyphens), *RuntimeSessionId.ToString(EGuidFormats::DigitsWithHyphens));
+    const TSharedRef<IHttpRequest> Request = CreateApiKeyRequest(TEXT("POST"), Path, ProjectApiKey);
+
+    Request->OnProcessRequestComplete().BindLambda(
+        [OnComplete](FHttpRequestPtr, FHttpResponsePtr Response, bool bConnectedSuccessfully)
+        {
+            FForgeQAApiError Error;
+            if (TryExtractError(Response, bConnectedSuccessfully, Error))
+            {
+                OnComplete(false, Error);
+                return;
+            }
+
+            OnComplete(true, FForgeQAApiError());
+        });
+
+    Request->ProcessRequest();
+}
+
 void FForgeQAApiClient::PutObject(const FString& UploadUrl, const FString& ContentType, TArray<uint8> Bytes, FPutObjectCallback OnComplete)
 {
     const TSharedRef<IHttpRequest> Request = FHttpModule::Get().CreateRequest();

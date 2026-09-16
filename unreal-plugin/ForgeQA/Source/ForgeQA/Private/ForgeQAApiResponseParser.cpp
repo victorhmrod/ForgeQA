@@ -259,6 +259,96 @@ FString FForgeQAApiResponseParser::SerializeInitiateAttachmentRequest(const FFor
     return Output;
 }
 
+FString FForgeQAApiResponseParser::SerializeStartTelemetrySessionRequest(const FForgeQAStartTelemetrySessionRequest& Request)
+{
+    const TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
+    Root->SetStringField(TEXT("runtimeSessionId"), Request.RuntimeSessionId.ToString(EGuidFormats::DigitsWithHyphens));
+    Root->SetStringField(TEXT("buildId"), Request.BuildId.ToString(EGuidFormats::DigitsWithHyphens));
+
+    const TSharedRef<FJsonObject> EnvironmentObject = MakeShared<FJsonObject>();
+    EnvironmentObject->SetStringField(TEXT("mapName"), Request.Environment.MapName);
+    EnvironmentObject->SetStringField(TEXT("gameMode"), Request.Environment.GameMode);
+    EnvironmentObject->SetStringField(TEXT("platform"), Request.Environment.Platform);
+    EnvironmentObject->SetStringField(TEXT("configuration"), Request.Environment.Configuration);
+    EnvironmentObject->SetStringField(TEXT("engineVersion"), Request.Environment.EngineVersion);
+    EnvironmentObject->SetStringField(TEXT("osVersion"), Request.Environment.OsVersion);
+    EnvironmentObject->SetStringField(TEXT("locale"), Request.Environment.Locale);
+    Root->SetObjectField(TEXT("environment"), EnvironmentObject);
+
+    FString Output;
+    const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Output);
+    FJsonSerializer::Serialize(Root, Writer);
+    return Output;
+}
+
+FString FForgeQAApiResponseParser::SerializeTelemetryEventsBatch(const TArray<FForgeQATelemetryEvent>& Events)
+{
+    const TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
+    TArray<TSharedPtr<FJsonValue>> EventValues;
+
+    for (const FForgeQATelemetryEvent& Event : Events)
+    {
+        const TSharedRef<FJsonObject> EventObject = MakeShared<FJsonObject>();
+        EventObject->SetNumberField(TEXT("sequenceNumber"), Event.SequenceNumber);
+        EventObject->SetStringField(TEXT("eventName"), Event.EventName);
+        EventObject->SetStringField(TEXT("clientTimestamp"), Event.ClientTimestamp.ToIso8601());
+        if (!Event.Category.IsEmpty())
+        {
+            EventObject->SetStringField(TEXT("category"), Event.Category);
+        }
+        if (!Event.MapName.IsEmpty())
+        {
+            EventObject->SetStringField(TEXT("mapName"), Event.MapName);
+        }
+
+        // Properties travel as an already-serialized JSON object string (built once by
+        // FForgeQATelemetryProperties::ToJsonObject at TrackEvent() time) — parse it back into a
+        // JSON value here rather than nesting it as an escaped string, so the wire format matches
+        // the backend's expected JSON object shape exactly.
+        TSharedPtr<FJsonValue> PropertiesValue;
+        const TSharedRef<TJsonReader<>> PropertiesReader = TJsonReaderFactory<>::Create(Event.PropertiesJson);
+        if (FJsonSerializer::Deserialize(PropertiesReader, PropertiesValue) && PropertiesValue.IsValid())
+        {
+            EventObject->SetField(TEXT("properties"), PropertiesValue);
+        }
+
+        EventValues.Add(MakeShared<FJsonValueObject>(EventObject));
+    }
+
+    Root->SetArrayField(TEXT("events"), EventValues);
+
+    FString Output;
+    const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Output);
+    FJsonSerializer::Serialize(Root, Writer);
+    return Output;
+}
+
+bool FForgeQAApiResponseParser::TryParseTelemetrySessionResult(const FString& JsonBody, FForgeQATelemetrySessionResult& OutResult)
+{
+    TSharedPtr<FJsonObject> Root;
+    if (!ParseJsonObject(JsonBody, Root))
+    {
+        return false;
+    }
+
+    OutResult.Id = ParseGuidField(Root, TEXT("id"));
+    OutResult.RuntimeSessionId = ParseGuidField(Root, TEXT("runtimeSessionId"));
+    return OutResult.Id.IsValid();
+}
+
+bool FForgeQAApiResponseParser::TryParseIngestTelemetryEventsResult(const FString& JsonBody, FForgeQAIngestTelemetryEventsResult& OutResult)
+{
+    TSharedPtr<FJsonObject> Root;
+    if (!ParseJsonObject(JsonBody, Root))
+    {
+        return false;
+    }
+
+    Root->TryGetNumberField(TEXT("accepted"), OutResult.Accepted);
+    Root->TryGetNumberField(TEXT("duplicates"), OutResult.Duplicates);
+    return true;
+}
+
 void FForgeQAApiResponseParser::ParseProblemDetails(const FString& JsonBody, int32 StatusCode, FForgeQAApiError& OutError)
 {
     OutError.StatusCode = StatusCode;
