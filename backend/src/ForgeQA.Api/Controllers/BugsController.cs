@@ -52,9 +52,10 @@ public class BugsController : ControllerBase
         [FromQuery] Guid? buildId = null,
         [FromQuery] BugSource? source = null,
         [FromQuery] string? search = null,
+        [FromQuery] Guid? runtimeSessionId = null,
         CancellationToken cancellationToken = default)
     {
-        var request = new ListBugsRequest(page, pageSize, status, severity, buildId, source, search);
+        var request = new ListBugsRequest(page, pageSize, status, severity, buildId, source, search, runtimeSessionId);
         var result = await _bugService.GetForProjectAsync(projectId, CurrentUserId, request, cancellationToken);
         return result.ToActionResult(this);
     }

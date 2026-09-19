@@ -123,6 +123,7 @@ export interface ListBugsParams {
   buildId?: string;
   source?: BugSource;
   search?: string;
+  runtimeSessionId?: string;
 }
 
 function buildQueryString(params: ListBugsParams): string {
@@ -134,6 +135,7 @@ function buildQueryString(params: ListBugsParams): string {
   if (params.buildId) query.set("buildId", params.buildId);
   if (params.source) query.set("source", params.source);
   if (params.search) query.set("search", params.search);
+  if (params.runtimeSessionId) query.set("runtimeSessionId", params.runtimeSessionId);
   const qs = query.toString();
   return qs ? `?${qs}` : "";
 }

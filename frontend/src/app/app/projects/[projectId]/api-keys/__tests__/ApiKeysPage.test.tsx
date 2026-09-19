@@ -14,10 +14,11 @@ vi.mock("@/lib/api/api-keys", () => ({
     create: vi.fn(),
     revoke: vi.fn(),
   },
-  PROJECT_API_KEY_SCOPES: ["BUG_REPORT_WRITE", "TELEMETRY_WRITE"],
+  PROJECT_API_KEY_SCOPES: ["BUG_REPORT_WRITE", "TELEMETRY_WRITE", "PERFORMANCE_WRITE"],
   PROJECT_API_KEY_SCOPE_LABELS: {
     BUG_REPORT_WRITE: "Bug Report Write",
     TELEMETRY_WRITE: "Telemetry Write",
+    PERFORMANCE_WRITE: "Performance Write",
   },
 }));
 
@@ -99,6 +100,21 @@ describe("ApiKeysPage", () => {
 
     await waitFor(() =>
       expect(mockedCreate).toHaveBeenCalledWith("project-1", "Game Server", ["BUG_REPORT_WRITE", "TELEMETRY_WRITE"]),
+    );
+  });
+
+  it("lets the user select the Performance Write scope before creating a key", async () => {
+    mockedList.mockResolvedValue([]);
+    mockedCreate.mockResolvedValue({ ...makeKey(), plaintextKey: "fqa_proj_ab12cd34_secretsecret" });
+    const user = userEvent.setup();
+
+    renderWithQueryClient(<ApiKeysPage />);
+    await user.type(await screen.findByPlaceholderText("Unreal Runtime"), "Perf Runtime");
+    await user.click(screen.getByLabelText("Performance Write"));
+    await user.click(screen.getByRole("button", { name: "Create key" }));
+
+    await waitFor(() =>
+      expect(mockedCreate).toHaveBeenCalledWith("project-1", "Perf Runtime", ["BUG_REPORT_WRITE", "PERFORMANCE_WRITE"]),
     );
   });
 

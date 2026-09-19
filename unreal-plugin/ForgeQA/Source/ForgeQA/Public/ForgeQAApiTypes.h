@@ -150,3 +150,11 @@ struct FORGEQA_API FForgeQAIngestTelemetryEventsResult
     int32 Accepted = 0;
     int32 Duplicates = 0;
 };
+
+/** Same accepted/duplicates shape as telemetry ingestion, kept as a distinct type since Performance
+ * and Telemetry are separate ingestion pipelines with separate API client methods. */
+struct FORGEQA_API FForgeQAIngestPerformanceSamplesResult
+{
+    int32 Accepted = 0;
+    int32 Duplicates = 0;
+};

@@ -3,27 +3,13 @@
 #include "ForgeQASettings.h"
 #include "ForgeQASubsystem.h"
 #include "ForgeQARuntimeCredentials.h"
+#include "ForgeQARetryPolicy.h"
 #include "ForgeQALog.h"
 #include "Engine/GameInstance.h"
 #include "TimerManager.h"
 #include "Dom/JsonObject.h"
 #include "Serialization/JsonWriter.h"
 #include "Serialization/JsonSerializer.h"
-
-namespace
-{
-    // Bounded exponential backoff for transient ingestion failures: 1s, 2s, 4s, 8s, capped at 30s.
-    // A permanent failure (401/403/400) never reaches this — see IsTransientFailure.
-    constexpr int32 MaxRetryAttempts = 4;
-    constexpr double MaxRetryDelaySeconds = 30.0;
-
-    double RetryDelayForAttempt(int32 Attempt)
-    {
-        const double Base = FMath::Min(MaxRetryDelaySeconds, FMath::Pow(2.0, static_cast<double>(Attempt)));
-        const double Jitter = FMath::FRandRange(0.0, Base * 0.2);
-        return Base + Jitter;
-    }
-}
 
 void UForgeQATelemetrySubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -239,7 +225,7 @@ void UForgeQATelemetrySubsystem::HandleFlushComplete(TArray<FForgeQATelemetryEve
 
     bLastFlushSucceeded = false;
 
-    if (IsTransientFailure(Error) && RetryAttempt < MaxRetryAttempts)
+    if (FForgeQARetryPolicy::IsTransientFailure(Error) && RetryAttempt < FForgeQARetryPolicy::MaxRetryAttempts)
     {
         UE_LOG(LogForgeQA, Warning, TEXT("ForgeQA telemetry batch upload failed (will retry): %s"), *Error.Message);
         ScheduleRetry(MoveTemp(AttemptedEvents));
@@ -265,16 +251,8 @@ void UForgeQATelemetrySubsystem::ScheduleRetry(TArray<FForgeQATelemetryEvent> Fa
         return;
     }
 
-    const double Delay = RetryDelayForAttempt(RetryAttempt);
+    const double Delay = FForgeQARetryPolicy::DelayForAttempt(RetryAttempt);
     GetGameInstance()->GetTimerManager().SetTimer(RetryTimerHandle, this, &UForgeQATelemetrySubsystem::TryFlush, Delay, /*bLoop=*/false);
-}
-
-bool UForgeQATelemetrySubsystem::IsTransientFailure(const FForgeQAApiError& Error)
-{
-    // 0 = never reached the server (network/timeout). 5xx and 429 are server-side/rate-limit
-    // conditions expected to clear. 401/403/400 are never retried — retrying a bad credential or a
-    // malformed request would just fail identically forever.
-    return Error.StatusCode == 0 || Error.StatusCode == 429 || Error.StatusCode >= 500;
 }
 
 void UForgeQATelemetrySubsystem::FlushTelemetry()

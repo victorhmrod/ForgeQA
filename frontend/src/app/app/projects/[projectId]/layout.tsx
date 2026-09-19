@@ -20,6 +20,7 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
     { label: "Builds", href: `${basePath}/builds` },
     { label: "Bugs", href: `${basePath}/bugs` },
     { label: "Telemetry", href: `${basePath}/telemetry` },
+    { label: "Performance", href: `${basePath}/performance` },
     { label: "API Keys", href: `${basePath}/api-keys` },
   ];
 

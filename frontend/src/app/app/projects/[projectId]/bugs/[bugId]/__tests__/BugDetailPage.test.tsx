@@ -31,12 +31,35 @@ vi.mock("@/lib/api/telemetry", async () => {
   };
 });
 
+vi.mock("@/lib/api/performance", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/api/performance")>("@/lib/api/performance");
+  return {
+    ...actual,
+    performanceApi: { list: vi.fn(), getSessionSummary: vi.fn(), getSamples: vi.fn(), getSeries: vi.fn(), getMapBreakdown: vi.fn(), getBuilds: vi.fn(), compare: vi.fn() },
+  };
+});
+
 import { bugsApi } from "@/lib/api/bugs";
 import { telemetryApi } from "@/lib/api/telemetry";
+import { performanceApi } from "@/lib/api/performance";
 import BugDetailPage from "../page";
 
 const mockedGetById = vi.mocked(bugsApi.getById);
 const mockedTelemetryList = vi.mocked(telemetryApi.list);
+const mockedGetPerformanceSummary = vi.mocked(performanceApi.getSessionSummary);
+
+function emptyPerformanceSummary() {
+  return {
+    sessionId: "session-1",
+    runtimeSessionId: "9818a0c3-20ea-45b2-ac73-1e89a1e2670e",
+    build: { id: "build-1", version: "0.6.0", buildNumber: "42", platform: "WINDOWS" as const, configuration: "DEVELOPMENT" as const },
+    summary: {
+      sampleCount: 0, averageFps: null, minimumFps: null, averageFrameTimeMs: null, p50FrameTimeMs: null,
+      p95FrameTimeMs: null, p99FrameTimeMs: null, maximumFrameTimeMs: null, averageMemoryUsedBytes: null,
+      peakMemoryUsedBytes: null, averageGameThreadTimeMs: null, averageRenderThreadTimeMs: null, averageGpuTimeMs: null,
+    },
+  };
+}
 
 function makeBug(overrides: Partial<Bug> = {}): Bug {
   return {
@@ -70,6 +93,7 @@ function pagedSessions(items: TelemetrySessionListItem[]): PagedResult<Telemetry
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockedGetPerformanceSummary.mockResolvedValue(emptyPerformanceSummary());
 });
 
 describe("BugDetailPage telemetry correlation", () => {
@@ -115,5 +139,43 @@ describe("BugDetailPage telemetry correlation", () => {
 
     await screen.findByText("9818a0c3-20ea-45b2-ac73-1e89a1e2670e");
     expect(screen.queryByRole("link", { name: /View telemetry session/ })).not.toBeInTheDocument();
+  });
+});
+
+describe("BugDetailPage performance correlation", () => {
+  const matchingSession = pagedSessions([
+    {
+      id: "session-1",
+      runtimeSessionId: "9818a0c3-20ea-45b2-ac73-1e89a1e2670e",
+      build: { id: "build-1", version: "0.6.0", buildNumber: "42", platform: "WINDOWS", configuration: "DEVELOPMENT" },
+      startedAt: "2026-01-01T00:00:00Z",
+      endedAt: null,
+      lastEventAt: null,
+      eventCount: 0,
+      platform: "WINDOWS",
+      mapName: null,
+    },
+  ]);
+
+  it("shows a performance link when the correlated session has samples", async () => {
+    mockedGetById.mockResolvedValue(makeBug({ runtimeSessionId: "9818a0c3-20ea-45b2-ac73-1e89a1e2670e" }));
+    mockedTelemetryList.mockResolvedValue(matchingSession);
+    mockedGetPerformanceSummary.mockResolvedValue({ ...emptyPerformanceSummary(), summary: { ...emptyPerformanceSummary().summary, sampleCount: 42 } });
+
+    renderWithQueryClient(<BugDetailPage />);
+
+    const link = await screen.findByRole("link", { name: /View performance/ });
+    expect(link).toHaveAttribute("href", "/app/projects/project-1/performance/session-1");
+  });
+
+  it("does not show a performance link when the correlated session has no samples", async () => {
+    mockedGetById.mockResolvedValue(makeBug({ runtimeSessionId: "9818a0c3-20ea-45b2-ac73-1e89a1e2670e" }));
+    mockedTelemetryList.mockResolvedValue(matchingSession);
+    mockedGetPerformanceSummary.mockResolvedValue(emptyPerformanceSummary());
+
+    renderWithQueryClient(<BugDetailPage />);
+
+    await screen.findByRole("link", { name: /View telemetry session/ });
+    expect(screen.queryByRole("link", { name: /View performance/ })).not.toBeInTheDocument();
   });
 });

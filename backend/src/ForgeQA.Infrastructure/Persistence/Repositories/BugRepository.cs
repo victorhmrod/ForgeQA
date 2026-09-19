@@ -39,6 +39,9 @@ public class BugRepository : IBugRepository
         if (query.Source is not null)
             bugs = bugs.Where(b => b.Source == query.Source);
 
+        if (query.RuntimeSessionId is not null)
+            bugs = bugs.Where(b => b.RuntimeSessionId == query.RuntimeSessionId);
+
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
             var search = query.Search.Trim();

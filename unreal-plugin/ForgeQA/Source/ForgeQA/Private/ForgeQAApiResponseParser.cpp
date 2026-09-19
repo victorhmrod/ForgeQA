@@ -349,6 +349,66 @@ bool FForgeQAApiResponseParser::TryParseIngestTelemetryEventsResult(const FStrin
     return true;
 }
 
+FString FForgeQAApiResponseParser::SerializePerformanceSamplesBatch(const TArray<FForgeQAPerformanceSample>& Samples)
+{
+    const TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
+    TArray<TSharedPtr<FJsonValue>> SampleValues;
+
+    for (const FForgeQAPerformanceSample& Sample : Samples)
+    {
+        const TSharedRef<FJsonObject> SampleObject = MakeShared<FJsonObject>();
+        SampleObject->SetNumberField(TEXT("sequenceNumber"), Sample.SequenceNumber);
+        SampleObject->SetStringField(TEXT("clientTimestamp"), Sample.Timestamp.ToIso8601());
+        if (!Sample.MapName.IsEmpty())
+        {
+            SampleObject->SetStringField(TEXT("mapName"), Sample.MapName);
+        }
+        SampleObject->SetNumberField(TEXT("fps"), Sample.FPS);
+        SampleObject->SetNumberField(TEXT("frameTimeMs"), Sample.FrameTimeMs);
+
+        // Optional metrics are omitted entirely (not sent as null/0) when unavailable — the
+        // backend's DTO fields are nullable and a missing field binds to null, never a false zero.
+        if (Sample.bHasGameThreadTime)
+        {
+            SampleObject->SetNumberField(TEXT("gameThreadTimeMs"), Sample.GameThreadTimeMs);
+        }
+        if (Sample.bHasRenderThreadTime)
+        {
+            SampleObject->SetNumberField(TEXT("renderThreadTimeMs"), Sample.RenderThreadTimeMs);
+        }
+        if (Sample.bHasGpuTime)
+        {
+            SampleObject->SetNumberField(TEXT("gpuTimeMs"), Sample.GpuTimeMs);
+        }
+        if (Sample.bHasMemoryUsed)
+        {
+            SampleObject->SetNumberField(TEXT("memoryUsedBytes"), static_cast<double>(Sample.MemoryUsedBytes));
+        }
+
+        SampleValues.Add(MakeShared<FJsonValueObject>(SampleObject));
+    }
+
+    Root->SetArrayField(TEXT("samples"), SampleValues);
+
+    FString Output;
+    const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Output);
+    FJsonSerializer::Serialize(Root, Writer);
+    return Output;
+}
+
+bool FForgeQAApiResponseParser::TryParseIngestPerformanceSamplesResult(const FString& JsonBody, FForgeQAIngestPerformanceSamplesResult& OutResult)
+{
+    TSharedPtr<FJsonObject> Root;
+    if (!ParseJsonObject(JsonBody, Root))
+    {
+        return false;
+    }
+
+    Root->TryGetNumberField(TEXT("accepted"), OutResult.Accepted);
+    Root->TryGetNumberField(TEXT("duplicates"), OutResult.Duplicates);
+    return true;
+}
+
 void FForgeQAApiResponseParser::ParseProblemDetails(const FString& JsonBody, int32 StatusCode, FForgeQAApiError& OutError)
 {
     OutError.StatusCode = StatusCode;

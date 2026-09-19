@@ -9,4 +9,7 @@ public static class RateLimiting
     /// much higher expected volume than bug reports, so it gets its own, more permissive policy —
     /// see docs/telemetry.md.</summary>
     public const string TelemetryIngestionPolicy = "TelemetryIngestion";
+
+    /// <summary>Applied to internet-facing runtime performance-ingestion endpoints. See docs/performance.md.</summary>
+    public const string PerformanceIngestionPolicy = "PerformanceIngestion";
 }

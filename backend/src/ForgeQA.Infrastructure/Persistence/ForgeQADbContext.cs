@@ -24,6 +24,7 @@ public class ForgeQADbContext : IdentityDbContext<ApplicationUser, IdentityRole<
     public DbSet<ProjectApiKey> ProjectApiKeys => Set<ProjectApiKey>();
     public DbSet<TelemetrySession> TelemetrySessions => Set<TelemetrySession>();
     public DbSet<TelemetryEvent> TelemetryEvents => Set<TelemetryEvent>();
+    public DbSet<PerformanceSample> PerformanceSamples => Set<PerformanceSample>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder builder)

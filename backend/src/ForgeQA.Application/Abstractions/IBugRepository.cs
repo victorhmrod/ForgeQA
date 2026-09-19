@@ -11,7 +11,8 @@ public record BugQuery(
     BugSeverity? Severity,
     Guid? BuildId,
     BugSource? Source,
-    string? Search);
+    string? Search,
+    Guid? RuntimeSessionId = null);
 
 public interface IBugRepository
 {

@@ -68,6 +68,20 @@ public:
     UPROPERTY(Config, EditAnywhere, Category = "ForgeQA|Telemetry", meta = (DisplayName = "Max Queued Events", ClampMin = "1"))
     int32 TelemetryMaxQueuedEvents = 1000;
 
+    /** Master switch for UForgeQAPerformanceSubsystem. Like telemetry, not compiled out of
+     * Shipping — a runtime opt-out only. */
+    UPROPERTY(Config, EditAnywhere, Category = "ForgeQA|Performance", meta = (DisplayName = "Enable Performance Monitoring"))
+    bool bEnablePerformanceMonitoring = true;
+
+    UPROPERTY(Config, EditAnywhere, Category = "ForgeQA|Performance", meta = (DisplayName = "Sample Interval (seconds)", ClampMin = "0.1"))
+    float PerformanceSampleIntervalSeconds = 1.0f;
+
+    UPROPERTY(Config, EditAnywhere, Category = "ForgeQA|Performance", meta = (DisplayName = "Batch Size", ClampMin = "1"))
+    int32 PerformanceBatchSize = 30;
+
+    UPROPERTY(Config, EditAnywhere, Category = "ForgeQA|Performance", meta = (DisplayName = "Max Queued Samples", ClampMin = "1"))
+    int32 PerformanceMaxQueuedSamples = 600;
+
     /** Returns ApiBaseUrl with exactly one trailing slash removed, so callers can safely append "/api/...". */
     FString GetNormalizedApiBaseUrl() const;
 };

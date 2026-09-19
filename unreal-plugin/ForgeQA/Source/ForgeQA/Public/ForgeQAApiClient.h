@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "ForgeQAApiTypes.h"
+#include "ForgeQAPerformanceTypes.h"
 #include "Interfaces/IHttpRequest.h"
 
 /**
@@ -32,6 +33,7 @@ public:
     using FStartTelemetrySessionCallback = TFunction<void(bool bSuccess, const FForgeQATelemetrySessionResult& Result, const FForgeQAApiError& Error)>;
     using FSendTelemetryEventsCallback = TFunction<void(bool bSuccess, const FForgeQAIngestTelemetryEventsResult& Result, const FForgeQAApiError& Error)>;
     using FEndTelemetrySessionCallback = TFunction<void(bool bSuccess, const FForgeQAApiError& Error)>;
+    using FSendPerformanceSamplesCallback = TFunction<void(bool bSuccess, const FForgeQAIngestPerformanceSamplesResult& Result, const FForgeQAApiError& Error)>;
 
     /** POST /api/auth/login. AccessToken/RefreshToken in the result are editor-session-only. */
     void Login(const FString& Email, const FString& Password, FLoginCallback OnComplete);
@@ -72,6 +74,10 @@ public:
 
     /** POST /api/projects/{projectId}/telemetry/sessions/{runtimeSessionId}/end, authenticated with a Project API key. Idempotent. */
     void EndTelemetrySession(const FString& ProjectApiKey, const FGuid& ProjectId, const FGuid& RuntimeSessionId, FEndTelemetrySessionCallback OnComplete);
+
+    /** POST /api/projects/{projectId}/performance/sessions/{runtimeSessionId}/samples, authenticated
+     * with a Project API key holding PERFORMANCE_WRITE. Targets an existing telemetry session. */
+    void SendPerformanceSamples(const FString& ProjectApiKey, const FGuid& ProjectId, const FGuid& RuntimeSessionId, const TArray<FForgeQAPerformanceSample>& Samples, FSendPerformanceSamplesCallback OnComplete);
 
 private:
     FString ApiBaseUrl;

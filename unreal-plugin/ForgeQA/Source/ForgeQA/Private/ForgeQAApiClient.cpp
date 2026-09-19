@@ -388,6 +388,40 @@ void FForgeQAApiClient::EndTelemetrySession(const FString& ProjectApiKey, const 
     Request->ProcessRequest();
 }
 
+void FForgeQAApiClient::SendPerformanceSamples(const FString& ProjectApiKey, const FGuid& ProjectId, const FGuid& RuntimeSessionId, const TArray<FForgeQAPerformanceSample>& Samples, FSendPerformanceSamplesCallback OnComplete)
+{
+    const FString Path = FString::Printf(
+        TEXT("/api/projects/%s/performance/sessions/%s/samples"),
+        *ProjectId.ToString(EGuidFormats::DigitsWithHyphens), *RuntimeSessionId.ToString(EGuidFormats::DigitsWithHyphens));
+    const TSharedRef<IHttpRequest> Request = CreateApiKeyRequest(TEXT("POST"), Path, ProjectApiKey);
+    Request->SetContentAsString(FForgeQAApiResponseParser::SerializePerformanceSamplesBatch(Samples));
+
+    Request->OnProcessRequestComplete().BindLambda(
+        [OnComplete](FHttpRequestPtr, FHttpResponsePtr Response, bool bConnectedSuccessfully)
+        {
+            FForgeQAApiError Error;
+            if (TryExtractError(Response, bConnectedSuccessfully, Error))
+            {
+                OnComplete(false, FForgeQAIngestPerformanceSamplesResult(), Error);
+                return;
+            }
+
+            FForgeQAIngestPerformanceSamplesResult Result;
+            if (!FForgeQAApiResponseParser::TryParseIngestPerformanceSamplesResult(Response->GetContentAsString(), Result))
+            {
+                FForgeQAApiError ParseError;
+                ParseError.Code = TEXT("InvalidResponse");
+                ParseError.Message = TEXT("ForgeQA API returned a response that could not be parsed.");
+                OnComplete(false, FForgeQAIngestPerformanceSamplesResult(), ParseError);
+                return;
+            }
+
+            OnComplete(true, Result, FForgeQAApiError());
+        });
+
+    Request->ProcessRequest();
+}
+
 void FForgeQAApiClient::PutObject(const FString& UploadUrl, const FString& ContentType, TArray<uint8> Bytes, FPutObjectCallback OnComplete)
 {
     const TSharedRef<IHttpRequest> Request = FHttpModule::Get().CreateRequest();

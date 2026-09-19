@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "ForgeQAApiTypes.h"
+#include "ForgeQAPerformanceTypes.h"
 
 class FJsonObject;
 
@@ -26,6 +27,8 @@ public:
     static FString SerializeTelemetryEventsBatch(const TArray<FForgeQATelemetryEvent>& Events);
     static bool TryParseTelemetrySessionResult(const FString& JsonBody, FForgeQATelemetrySessionResult& OutResult);
     static bool TryParseIngestTelemetryEventsResult(const FString& JsonBody, FForgeQAIngestTelemetryEventsResult& OutResult);
+    static FString SerializePerformanceSamplesBatch(const TArray<FForgeQAPerformanceSample>& Samples);
+    static bool TryParseIngestPerformanceSamplesResult(const FString& JsonBody, FForgeQAIngestPerformanceSamplesResult& OutResult);
 
     /** Parses an ASP.NET Core ProblemDetails body ({"title","status","detail"}) into a display message. */
     static void ParseProblemDetails(const FString& JsonBody, int32 StatusCode, FForgeQAApiError& OutError);

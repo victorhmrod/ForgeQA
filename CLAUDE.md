@@ -189,6 +189,29 @@ Conventions established in this codebase — follow them rather than introducing
   retry against), while a duplicate `SequenceNumber` already persisted for the session is silently
   skipped and counted, computed via a single existence-check query before any `AddRange` — never a
   per-row `SaveChanges` and never a database unique-constraint violation used as control flow.
+  `PerformanceService.IngestAsync` (M6) follows the identical shape against `PerformanceSample`.
+- **Aggregation and percentiles are always computed in PostgreSQL via ad-hoc `Database.SqlQuery<T>`
+  raw SQL, never by loading rows into memory.** `PerformanceRepository` uses
+  `PERCENTILE_CONT(...) WITHIN GROUP (ORDER BY ...)` for p50/p95/p99 and plain `AVG`/`MIN`/`MAX` for
+  the rest, materializing into private plain mutable "Row" classes (parameterless constructor +
+  settable properties) rather than the public immutable record DTOs — `SqlQuery<T>` needs the
+  former for materialization. A query with no matching rows still returns exactly one row with
+  `COUNT = 0` and every other column `NULL` (standard SQL aggregate behavior), which is why summary
+  methods never need a "no data" special case — an empty result set already produces a correct,
+  all-null `PerformanceSummary`. Follow this pattern (raw SQL + private Row classes) for any future
+  aggregate query rather than composing it from LINQ or pulling rows client-side.
+- **A new scope must be checked explicitly everywhere it matters — the M5 lesson generalizes.**
+  `PERFORMANCE_WRITE` (M6) followed the same rule established when `TELEMETRY_WRITE` exposed a gap
+  in M4's `BugService`: `PerformanceIngestionCaller` carries scopes and
+  `PerformanceService.AuthorizeIngestionAsync` checks `PERFORMANCE_WRITE` explicitly; the M4/M5
+  scope-isolation tests were re-run and extended (a `PERFORMANCE_WRITE`-only key can submit neither
+  bugs nor telemetry events, and vice versa) rather than assumed still-correct.
+- **A milestone's ingestion targets an existing parent resource; it never auto-creates one.**
+  `PerformanceService.IngestAsync` looks up the `TelemetrySession` by `ProjectId + RuntimeSessionId`
+  and returns `404 NotFound` if it doesn't exist yet (the runtime submitted performance before
+  calling Telemetry's session-start) — it never silently creates a partial session. Apply the same
+  "reject, don't auto-create" rule to any future ingestion type that logically nests under an
+  existing session/parent rather than being its own root resource.
 
 ### Testing
 
@@ -288,11 +311,33 @@ most one flush in flight and bounded exponential backoff on transient failures o
 429 — never 400/401/403, which are dropped and logged instead of retried forever). See
 `docs/telemetry.md` for the full queue/retry/shutdown behavior and the Blueprint/C++ API surface.
 
+### Performance subsystem (M6, `Source/ForgeQA/`)
+
+`UForgeQAPerformanceSubsystem` is a fourth, separate `UGameInstanceSubsystem` — continuous
+lightweight sampling is its own responsibility, distinct from identity (`UForgeQASubsystem`), bug
+submission, and event telemetry. It reuses Build Context/`RuntimeSessionId`/credentials exactly as
+the other two do. Frame counting/`DeltaTime` accumulation happens every frame via
+`FCoreDelegates::OnEndFrame` (cheap: one increment, one add); an interval timer turns that into one
+FPS/frame-time sample, never per-frame. Optional metrics (thread/GPU timing, memory) use explicit
+`bHas*` availability flags on `FForgeQAPerformanceSample` rather than a sentinel zero — Blueprint
+has no nullable primitives, and zero is a legitimate (if suspicious) reading for some of these
+fields. Shares `FForgeQARetryPolicy` with the Telemetry subsystem (see below) rather than keeping a
+second copy of transient-failure classification/backoff. See `docs/performance.md` for exact metric
+semantics and the full queue/retry/shutdown behavior.
+
+### Shared runtime retry policy (`FForgeQARetryPolicy`, `Source/ForgeQA/`)
+
+M6 extracted `FForgeQARetryPolicy` (transient-failure classification + bounded exponential backoff
+with jitter) out of `UForgeQATelemetrySubsystem` once `UForgeQAPerformanceSubsystem` needed the
+identical behavior — a small, deliberately non-generic shared helper, not a retry framework. Any
+new runtime ingestion pipeline should use this policy rather than reimplementing
+classification/backoff a third time.
+
 ## Docker Compose services
 
 `docker-compose.yml` defines `postgres`, `minio` (backs Build Distribution's S3-compatible artifact
 storage and, since M4, Bug Reporting's screenshot storage via the shared `IObjectStorage`
 abstraction — see `docs/build-distribution.md` and `docs/bug-reporting.md`), `backend`, and
 `frontend`, wired together via environment variables sourced from `.env` (copy from
-`.env.example`, never commit `.env`). Telemetry (M5) stores events directly in PostgreSQL — it does
-not add or use any new Compose service.
+`.env.example`, never commit `.env`). Telemetry (M5) and Performance (M6) both store their data
+directly in PostgreSQL — neither adds or uses any new Compose service.

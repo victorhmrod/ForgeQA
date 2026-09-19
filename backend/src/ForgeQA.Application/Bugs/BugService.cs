@@ -110,7 +110,7 @@ public class BugService
         var page = request.Page < 1 ? 1 : request.Page;
         var pageSize = request.PageSize <= 0 ? defaultPageSize : Math.Min(request.PageSize, maxPageSize);
 
-        var query = new BugQuery(projectId, page, pageSize, request.Status, request.Severity, request.BuildId, request.Source, request.Search);
+        var query = new BugQuery(projectId, page, pageSize, request.Status, request.Severity, request.BuildId, request.Source, request.Search, request.RuntimeSessionId);
         var (items, totalCount) = await _bugRepository.QueryAsync(query, cancellationToken);
 
         var buildIds = items.Where(b => b.BuildId is not null).Select(b => b.BuildId!.Value).Distinct().ToList();

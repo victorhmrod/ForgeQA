@@ -11,5 +11,8 @@
 - [Telemetry](telemetry.md) — Milestone 5: `TelemetrySession`/`TelemetryEvent`, batched/idempotent
   ingestion, the `TELEMETRY_WRITE` API key scope, the Unreal telemetry subsystem, and the event
   timeline dashboard.
+- [Performance](performance.md) — Milestone 6: `PerformanceSample`, FPS/frame-time/memory
+  sampling, the `PERFORMANCE_WRITE` API key scope, Build aggregation and comparison, percentile
+  calculations, and the Unreal performance subsystem.
 
 For general setup and the overall roadmap, see the repository root [README.md](../README.md).

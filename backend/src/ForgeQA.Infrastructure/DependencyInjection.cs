@@ -2,6 +2,7 @@ using ForgeQA.Application.Abstractions;
 using ForgeQA.Application.Artifacts;
 using ForgeQA.Application.Bugs;
 using ForgeQA.Application.Telemetry;
+using ForgeQA.Application.Performance;
 using ForgeQA.Infrastructure.Auth;
 using ForgeQA.Infrastructure.Identity;
 using ForgeQA.Infrastructure.Persistence;
@@ -40,6 +41,7 @@ public static class DependencyInjection
         services.Configure<S3StorageOptions>(configuration.GetSection(ArtifactStorageOptions.SectionName));
         services.Configure<BugReportingOptions>(configuration.GetSection(BugReportingOptions.SectionName));
         services.Configure<TelemetryOptions>(configuration.GetSection(TelemetryOptions.SectionName));
+        services.Configure<PerformanceOptions>(configuration.GetSection(PerformanceOptions.SectionName));
 
         services.AddScoped<IOrganizationRepository, OrganizationRepository>();
         services.AddScoped<IProjectRepository, ProjectRepository>();
@@ -48,6 +50,7 @@ public static class DependencyInjection
         services.AddScoped<IBugRepository, BugRepository>();
         services.AddScoped<IProjectApiKeyRepository, ProjectApiKeyRepository>();
         services.AddScoped<ITelemetryRepository, TelemetryRepository>();
+        services.AddScoped<IPerformanceRepository, PerformanceRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddSingleton<S3ArtifactStorage>();

@@ -107,7 +107,6 @@ private:
     void TryFlush();
     void HandleFlushComplete(TArray<FForgeQATelemetryEvent> AttemptedEvents, bool bSuccess, const FForgeQAIngestTelemetryEventsResult& Result, const FForgeQAApiError& Error);
     void ScheduleRetry(TArray<FForgeQATelemetryEvent> FailedEvents);
-    static bool IsTransientFailure(const FForgeQAApiError& Error);
 
 public:
     /** Mirrors the backend's event-name rule (see docs/telemetry.md): 1-128 characters, letters,

@@ -417,6 +417,79 @@ namespace ForgeQA.Infrastructure.Persistence.Migrations
                     b.ToTable("OrganizationMembers", (string)null);
                 });
 
+            modelBuilder.Entity("ForgeQA.Domain.Entities.PerformanceSample", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ClientTimestamp")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<double?>("CpuUtilizationPercent")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("DrawCalls")
+                        .HasColumnType("integer");
+
+                    b.Property<double>("Fps")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("FrameTimeMs")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("GameThreadTimeMs")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("GpuTimeMs")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("GpuUtilizationPercent")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("MapName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<long?>("MemoryAvailableBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("MemoryUsedBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<double?>("PingMs")
+                        .HasColumnType("double precision");
+
+                    b.Property<int?>("PlayerCount")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("ReceivedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<double?>("RenderThreadTimeMs")
+                        .HasColumnType("double precision");
+
+                    b.Property<int>("SequenceNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TelemetrySessionId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TelemetrySessionId", "ClientTimestamp");
+
+                    b.HasIndex("TelemetrySessionId", "MapName");
+
+                    b.HasIndex("TelemetrySessionId", "SequenceNumber")
+                        .IsUnique();
+
+                    b.ToTable("PerformanceSamples", (string)null);
+                });
+
             modelBuilder.Entity("ForgeQA.Domain.Entities.Project", b =>
                 {
                     b.Property<Guid>("Id")
@@ -965,6 +1038,15 @@ namespace ForgeQA.Infrastructure.Persistence.Migrations
                     b.HasOne("ForgeQA.Domain.Entities.Organization", null)
                         .WithMany("Members")
                         .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ForgeQA.Domain.Entities.PerformanceSample", b =>
+                {
+                    b.HasOne("ForgeQA.Domain.Entities.TelemetrySession", null)
+                        .WithMany()
+                        .HasForeignKey("TelemetrySessionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

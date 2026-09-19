@@ -6,6 +6,7 @@ using ForgeQA.Api.Middleware;
 using ForgeQA.Application;
 using ForgeQA.Application.Bugs;
 using ForgeQA.Application.Telemetry;
+using ForgeQA.Application.Performance;
 using ForgeQA.Infrastructure;
 using ForgeQA.Infrastructure.Auth;
 using ForgeQA.Infrastructure.Persistence;
@@ -102,6 +103,22 @@ builder.Services.AddRateLimiter(options =>
             ?? "unknown";
 
         var maxPerMinute = httpContext.RequestServices.GetRequiredService<IOptions<TelemetryOptions>>().Value.MaxBatchesPerMinutePerKey;
+
+        return RateLimitPartition.GetFixedWindowLimiter(partitionKey, _ => new FixedWindowRateLimiterOptions
+        {
+            Window = TimeSpan.FromMinutes(1),
+            PermitLimit = maxPerMinute,
+            QueueLimit = 0
+        });
+    });
+
+    options.AddPolicy(RateLimiting.PerformanceIngestionPolicy, httpContext =>
+    {
+        var partitionKey = httpContext.User.FindFirst(ProjectApiKeyDefaults.ProjectApiKeyIdClaim)?.Value
+            ?? httpContext.Connection.RemoteIpAddress?.ToString()
+            ?? "unknown";
+
+        var maxPerMinute = httpContext.RequestServices.GetRequiredService<IOptions<PerformanceOptions>>().Value.MaxBatchesPerMinutePerKey;
 
         return RateLimitPartition.GetFixedWindowLimiter(partitionKey, _ => new FixedWindowRateLimiterOptions
         {

@@ -1,12 +1,13 @@
 import { apiClient } from "./client";
 
-export type ProjectApiKeyScope = "BUG_REPORT_WRITE" | "TELEMETRY_WRITE";
+export type ProjectApiKeyScope = "BUG_REPORT_WRITE" | "TELEMETRY_WRITE" | "PERFORMANCE_WRITE";
 
-export const PROJECT_API_KEY_SCOPES: ProjectApiKeyScope[] = ["BUG_REPORT_WRITE", "TELEMETRY_WRITE"];
+export const PROJECT_API_KEY_SCOPES: ProjectApiKeyScope[] = ["BUG_REPORT_WRITE", "TELEMETRY_WRITE", "PERFORMANCE_WRITE"];
 
 export const PROJECT_API_KEY_SCOPE_LABELS: Record<ProjectApiKeyScope, string> = {
   BUG_REPORT_WRITE: "Bug Report Write",
   TELEMETRY_WRITE: "Telemetry Write",
+  PERFORMANCE_WRITE: "Performance Write",
 };
 
 export interface ProjectApiKey {

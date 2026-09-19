@@ -81,7 +81,8 @@ public record ListBugsRequest(
     BugSeverity? Severity,
     Guid? BuildId,
     BugSource? Source,
-    string? Search);
+    string? Search,
+    Guid? RuntimeSessionId = null);
 
 public record InitiateBugAttachmentRequest(BugAttachmentType Type, string FileName, string ContentType, long SizeBytes);
 public record InitiateBugAttachmentResponse(Guid AttachmentId, string UploadUrl, DateTime ExpiresAt);

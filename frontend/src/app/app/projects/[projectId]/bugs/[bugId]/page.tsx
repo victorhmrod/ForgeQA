@@ -18,6 +18,7 @@ import {
 } from "@/lib/api/bugs";
 import { ApiError } from "@/lib/api/client";
 import { telemetryApi } from "@/lib/api/telemetry";
+import { performanceApi } from "@/lib/api/performance";
 import { SeverityBadge, StatusBadge } from "@/components/bug-badges";
 import { AttachmentPreview } from "@/components/attachment-preview";
 
@@ -50,6 +51,15 @@ export default function BugDetailPage() {
     enabled: !!bug?.runtimeSessionId,
   });
   const telemetrySessionId = telemetryMatch?.items[0]?.id;
+
+  // A performance session is the same TelemetrySession row — only linked when it actually has
+  // performance samples, so this never points at an empty page.
+  const { data: performanceSummary } = useQuery({
+    queryKey: ["performance-sessions", "detail", projectId, telemetrySessionId],
+    queryFn: () => performanceApi.getSessionSummary(projectId, telemetrySessionId!),
+    enabled: !!telemetrySessionId,
+  });
+  const hasPerformanceData = (performanceSummary?.summary.sampleCount ?? 0) > 0;
 
   if (isLoading) {
     return <main className="px-6 py-8 text-sm text-muted">Loading...</main>;
@@ -153,13 +163,21 @@ export default function BugDetailPage() {
           </Section>
 
           {telemetrySessionId && (
-            <div>
+            <div className="flex gap-4">
               <Link
                 href={`/app/projects/${projectId}/telemetry/${telemetrySessionId}`}
                 className="text-sm text-accent hover:underline"
               >
                 View telemetry session &rarr;
               </Link>
+              {hasPerformanceData && (
+                <Link
+                  href={`/app/projects/${projectId}/performance/${telemetrySessionId}`}
+                  className="text-sm text-accent hover:underline"
+                >
+                  View performance &rarr;
+                </Link>
+              )}
             </div>
           )}
 

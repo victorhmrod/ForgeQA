@@ -34,29 +34,8 @@ bool FForgeQATelemetryInvalidEventNamesTest::RunTest(const FString& Parameters)
 }
 
 // --- Retry classification ---
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FForgeQATelemetryRetryClassificationTest, "ForgeQA.Telemetry.RetryClassification.ClassifiesFailuresCorrectly",
-    EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
-bool FForgeQATelemetryRetryClassificationTest::RunTest(const FString& Parameters)
-{
-    // Transient: network failure (status 0), rate limiting, and server errors should be retried.
-    FForgeQAApiError NetworkError; NetworkError.StatusCode = 0;
-    FForgeQAApiError RateLimited; RateLimited.StatusCode = 429;
-    FForgeQAApiError ServerError; ServerError.StatusCode = 503;
-
-    // Permanent: bad credentials/request should never be retried.
-    FForgeQAApiError Unauthorized; Unauthorized.StatusCode = 401;
-    FForgeQAApiError Forbidden; Forbidden.StatusCode = 403;
-    FForgeQAApiError BadRequest; BadRequest.StatusCode = 400;
-
-    TestTrue(TEXT("A network failure is transient"), UForgeQATelemetrySubsystem::IsTransientFailure(NetworkError));
-    TestTrue(TEXT("A 429 is transient"), UForgeQATelemetrySubsystem::IsTransientFailure(RateLimited));
-    TestTrue(TEXT("A 5xx is transient"), UForgeQATelemetrySubsystem::IsTransientFailure(ServerError));
-    TestFalse(TEXT("A 401 is permanent"), UForgeQATelemetrySubsystem::IsTransientFailure(Unauthorized));
-    TestFalse(TEXT("A 403 is permanent"), UForgeQATelemetrySubsystem::IsTransientFailure(Forbidden));
-    TestFalse(TEXT("A 400 is permanent"), UForgeQATelemetrySubsystem::IsTransientFailure(BadRequest));
-    return true;
-}
+// Moved to the shared FForgeQARetryPolicy in M6 (Telemetry and Performance both use it — see
+// ForgeQARetryPolicyTests.cpp) so it is exercised once rather than duplicated per subsystem.
 
 // --- Sequence assignment and queue maximum behavior ---
 // UForgeQATelemetrySubsystem's TrackEvent()/queue logic only touches GetGameInstance() inside
